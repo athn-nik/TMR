@@ -1,0 +1,6 @@
+defaults:
+  - _base
+  - _self_
+
+base_dir: datasets/motions/amass_feats
+nfeats: 135
