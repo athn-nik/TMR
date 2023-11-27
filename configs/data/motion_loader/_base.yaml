@@ -1,4 +1,4 @@
-_target_: src.data.motion.AMASSMotionLoader
+_target_: src.data.amass_motion.AMASSMotionLoader_custom
 
 base_dir: ???
 

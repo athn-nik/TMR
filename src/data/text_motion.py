@@ -6,7 +6,7 @@ import json
 import numpy as np
 from torch.utils.data import Dataset
 from tqdm import tqdm
-
+import glob
 from .collate import collate_text_motion
 
 
@@ -44,7 +44,7 @@ class TextMotionDataset(Dataset):
         self.collate_fn = collate_text_motion
         self.split = split
         self.keyids = read_split(path, split)
-
+        self.path = path
         self.text_to_sent_emb = text_to_sent_emb
         self.text_to_token_emb = text_to_token_emb
         self.motion_loader = motion_loader
@@ -55,6 +55,15 @@ class TextMotionDataset(Dataset):
         # remove too short or too long annotations
         self.annotations = load_annotations(path)
 
+        # patch 
+        keys_avail = glob.glob(f'{self.motion_loader.base_dir}/*.npy')
+        keys_avail = [k.split('/')[-1].replace('.npy', '') for k in keys_avail]
+
+        updated_annots = {}
+        for k, v in self.annotations.items():
+            if k in keys_avail:
+                updated_annots[k] = v
+        self.annotations = updated_annots
         # filter annotations (min/max)
         # but not for the test set
         # otherwise it is not fair for everyone
@@ -89,9 +98,7 @@ class TextMotionDataset(Dataset):
         text = annotation["text"]
         text_x_dict = self.text_to_token_emb(text)
         motion_x_dict = self.motion_loader(
-            path=annotations["path"],
-            start=annotation["start"],
-            end=annotation["end"],
+            path=keyid
         )
         sent_emb = self.text_to_sent_emb(text)
 

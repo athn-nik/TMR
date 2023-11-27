@@ -1,5 +1,5 @@
 defaults:
-  - motion_loader: guoh3dfeats
+  - motion_loader: amass_feats
   - _self_
 
 _target_: src.data.text_motion.TextMotionDataset
