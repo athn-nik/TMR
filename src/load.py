@@ -58,7 +58,6 @@ def load_model_from_cfg(cfg, ckpt_name="last", device="cpu", eval_mode=True):
 
     for fname in os.listdir(pt_path):
         module_name, ext = os.path.splitext(fname)
-
         if ext != ".pt":
             continue
 

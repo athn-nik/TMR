@@ -145,7 +145,7 @@ class TEMOS(LightningModule):
 
     # Forward: X => motions
     def forward(
-        self,
+        self, 
         inputs,
         lengths: Optional[List[int]] = None,
         mask: Optional[Tensor] = None,

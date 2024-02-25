@@ -12,4 +12,4 @@ warnings.filterwarnings(
 
 warnings.filterwarnings("ignore", "Converting mask without torch.bool dtype to bool*")
 
-torch.set_float32_matmul_precision("high")
+# torch.set_float32_matmul_precision("high")

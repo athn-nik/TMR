@@ -21,6 +21,44 @@ def print_latex_metrics(metrics):
     print("Number of samples: {}".format(int(metrics["t2m/len"])))
     print(str_)
 
+def print_latex_metrics_m2m(metrics):
+    vals = [str(x).zfill(2) for x in [1, 2, 3, 5, 10]]
+    m2m_keys = [f"m2m/R{i}" for i in vals] + ["m2m/MedR"] + ["m2m/AvgR"]
+
+    keys = m2m_keys 
+
+    def ff(val_):
+        val = str(val_).ljust(5, "0")
+        # make decimal fine when only one digit
+        if val[1] == ".":
+            val = str(val_).ljust(4, "0")
+        return val
+
+    str_ = "& " + " & ".join([ff(metrics[key]) for key in keys]) + r" \\"
+    dico = {key: ff(metrics[key]) for key in keys}
+    print(dico)
+    print("Number of samples: {}".format(int(metrics["m2m/len"])))
+    print(str_)
+    return str_
+
+def all_contrastive_metrics_mot2mot(
+    sims, emb=None, threshold=None, rounding=2, return_cols=False
+):
+    text_selfsim = None
+    if emb is not None:
+        text_selfsim = emb @ emb.T
+
+    m2m_m, m2m_cols = contrastive_metrics(
+        sims, text_selfsim, threshold, return_cols=True, rounding=rounding
+    )
+
+    all_m = {}
+    for key in m2m_m:
+        all_m[f"m2m/{key}"] = m2m_m[key]
+ 
+    all_m["m2m/len"] = float(len(sims))
+ 
+    return all_m
 
 def all_contrastive_metrics(
     sims, emb=None, threshold=None, rounding=2, return_cols=False
@@ -122,8 +160,8 @@ def cols2metrics(cols, num_queries, rounding=2):
     vals = [str(x).zfill(2) for x in [1, 2, 3, 5, 10]]
     for val in vals:
         metrics[f"R{val}"] = 100 * float(np.sum(cols < int(val))) / num_queries
-
     metrics["MedR"] = float(np.median(cols) + 1)
+    metrics["AvgR"] = float(np.mean(cols) + 1)
 
     if rounding is not None:
         for key in metrics:

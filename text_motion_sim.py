@@ -41,21 +41,48 @@ def text_motion_sim(cfg: DictConfig) -> None:
 
     motion_x_dict = {"x": motion, "length": len(motion)}
 
+    from src.data.text import SentenceEmbeddings
+    from src.model.tmr import get_sim_matrix
+
+    sent_embeds = SentenceEmbeddings(path='datasets/text_embeds/sentence/',
+                       modelname='sentence-transformers/all-mpnet-base-v2',
+                       preload=True)
+    latents_text = []
+    latents_motion = []
+
     with torch.inference_mode():
-        # motion -> latent
-        motion_x_dict = collate_x_dict([motion_x_dict])
-        lat_m = model.encode(motion_x_dict, sample_mean=True)[0]
+        for motion_x_dict, text in zip(motion_x_dict, text):
+            # motion -> latent
+            motion_x_dict = collate_x_dict([motion_x_dict])
+            lat_m = model.encode(motion_x_dict, sample_mean=True)[0]
 
-        # text -> latent
-        text_x_dict = collate_x_dict(text_model([text]))
-        lat_t = model.encode(text_x_dict, sample_mean=True)[0]
+            # text -> latent
+            text_x_dict = collate_x_dict(text_model([text]))
+            lat_t = model.encode(text_x_dict, sample_mean=True)[0]
 
-        score = get_score_matrix(lat_t, lat_m).cpu()
+            latents_text.append(lat_t)
+            latents_motion.append(lat_m)
+
+            score = get_score_matrix(lat_t, lat_m).cpu()
+
+    latent_texts = torch.cat(latents_text)
+    latent_motions = torch.cat(latents_motion)
+    sim_matrix = get_sim_matrix(latent_texts, latent_motions)
+    returned = {
+        "sim_matrix": sim_matrix.cpu().numpy(),
+        # "sent_emb": sent_embs.cpu().numpy(),
+    }
+
+    # sent_embs = torch.cat(sent_embs)
 
     score_str = f"{score:.3}"
     logger.info(
         f"The similariy score s (0 <= s <= 1) between the text and the motion is: {score_str}"
     )
+
+
+def compute_simitlarities(lotexts, lomotions):
+    text_motion_sim(list_of_texts, list_of_motions)
 
 
 if __name__ == "__main__":
