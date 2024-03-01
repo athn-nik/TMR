@@ -27,8 +27,11 @@ class SincSynthLoader(Dataset):
 
         if test_only:
             self.datapath = 'datasets/sinc_synth/sinc_synth_edits_v1.pth.tar'
+            self.normalizer = Normalizer(curdir/'stats/humanml3d/amass_feats')
+
             ds_db_path = Path(curdir / self.datapath)
 
+            dataset_dict_raw = joblib.load(ds_db_path)
             data_dict = cast_dict_to_tensors(dataset_dict_raw) 
             data_ids = list(data_dict.keys())
             from src.data.utils import read_json
@@ -38,13 +41,7 @@ class SincSynthLoader(Dataset):
             for test_id in test_ids:
                 self.motions[test_id] = data_dict[test_id]
             # self.base_dir = base_dir
-            self.keyids = list(self.motions.keys())
- 
- 
-            self.motions = joblib.load(ds_db_path)
-            # self.base_dir = base_dir
-            self.keyids = list(self.motions.keys())
-            self.normalizer = Normalizer(curdir/'stats/humanml3d/amass_feats')
+            self.keyids = list(self.motions.keys()) 
 
         else:
             self.datapath = 'datasets/sinc_synth/sinc_synth_edits_v1.pth.tar'

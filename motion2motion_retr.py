@@ -358,11 +358,11 @@ def retrieval(newcfg: DictConfig) -> None:
                     batch_size=batch_size,
                 )
                 results.update({key: res for key in ["normal"]})
-                dists = get_motion_distances(
-                    model, dataset, dataset.keyids, 
-                    motion_gen_path=motion_gen_path,
-                    batch_size=batch_size,
-                )
+                # dists = get_motion_distances(
+                #     model, dataset, dataset.keyids, 
+                #     motion_gen_path=motion_gen_path,
+                #     batch_size=batch_size,
+                # )
 
             elif protocol == "guo":
                 keyids = sorted(dataset.keyids)
@@ -388,6 +388,12 @@ def retrieval(newcfg: DictConfig) -> None:
                     )
                     for idx_batch in idx_batches
                 ]
+                # dists = get_motion_distances(
+                #     model, dataset, dataset.keyids, 
+                #     motion_gen_path=motion_gen_path,
+                #     batch_size=batch_size,
+                # )
+                
         result = results[protocol]
 
         # Compute the metrics
