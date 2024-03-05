@@ -41,20 +41,20 @@ def lengths_to_mask(lengths: List[int], device: torch.device) -> Tensor:
                                               max_len) < lengths.unsqueeze(1)
     return mask
 
-def collect_gen_samples(data_for_keys, motion_gen_path, normalizer, device):
-    cur_samples = []
+def collect_gen_samples(motion_gen_path, normalizer, device):
+    cur_samples = {}
     # it becomes from 
     # translation | root_orient | rots --> trans | rots | root_orient 
     logger.info("Collecting Generated Samples")
     from prepare.compute_amass import _get_body_transl_delta_pelv
+    import glob
 
-    for i in tqdm(range(len(data_for_keys))):
-        cur_keyid = data_for_keys[i]['keyid']
-        fname = f"{str(cur_keyid).zfill(6)}.npy"
-        gen_motion_b = np.load(Path(motion_gen_path) / fname,
+    sample_files = glob.glob(f'{motion_gen_path}/*.npy')
+    for fname in tqdm(sample_files):
+        keyid = str(Path(fname).name).replace('.npy', '')
+        gen_motion_b = np.load(fname,
                                 allow_pickle=True).item()['pose']
         gen_motion_b = torch.from_numpy(gen_motion_b)
-
         trans = gen_motion_b[..., :3]
         global_orient_6d = gen_motion_b[..., 3:9]
         body_pose_6d = gen_motion_b[..., 9:]
@@ -63,10 +63,10 @@ def collect_gen_samples(data_for_keys, motion_gen_path, normalizer, device):
         gen_motion_b_fixed = torch.cat([trans_delta, body_pose_6d,
                                         global_orient_6d], dim=-1)
         gen_motion_b_fixed = normalizer(gen_motion_b_fixed)
-        cur_samples.append(gen_motion_b_fixed.to(device))
+        cur_samples[keyid] = gen_motion_b_fixed.to(device) 
     return cur_samples
 
-def compute_sim_matrix(model, dataset, keyids, motion_gen_path=None,
+def compute_sim_matrix(model, dataset, keyids, gen_samples,
                        batch_size=256):
     import torch
     import numpy as np
@@ -78,15 +78,6 @@ def compute_sim_matrix(model, dataset, keyids, motion_gen_path=None,
         batch_size = len(dataset)
     nsplit = int(np.ceil(len(dataset) / batch_size))
     returned = {}
-
-    if motion_gen_path is not None:
-        curdir = Path(hydra.utils.get_original_cwd())
-        # calculate splits
-        from src.data.motionfix_loader import Normalizer
-        normalizer = Normalizer(curdir/'stats/humanml3d/amass_feats')
-        compute_gen = True
-    else:
-        compute_gen = False
 
     with torch.no_grad():
 
@@ -103,17 +94,15 @@ def compute_sim_matrix(model, dataset, keyids, motion_gen_path=None,
             for data in tqdm(all_data_splitted, leave=False):
                 # batch = collate_text_motion(data, device=device)
                 from src.data.collate import collate_tensor_with_padding, length_to_mask
-
+                cur_batch_keys = [x['keyid'] for x in data]
                 # TODO load the motions for the generations
                 # Text is already encoded
                 if sett == 's_t':
                     motion_a = collate_tensor_with_padding(
                         [x['motion_source'] for x in data]).to(model.device)
                     lengths_a = [len(x['motion_source']) for x in data]
-                    if compute_gen:
-                        cur_samples = collect_gen_samples(data, motion_gen_path,
-                                                          normalizer, 
-                                                          model.device)
+                    if gen_samples:
+                        cur_samples = [gen_samples[key_in_batch] for key_in_batch in cur_batch_keys]
                         lengths_b = [len(x) for x in cur_samples]
                         motion_b = collate_tensor_with_padding(
                             cur_samples).to(model.device)
@@ -133,10 +122,8 @@ def compute_sim_matrix(model, dataset, keyids, motion_gen_path=None,
                     motion_a = collate_tensor_with_padding(
                         [x['motion_target'] for x in data]).to(model.device)
                     lengths_a = [len(x['motion_target']) for x in data]
-                    if compute_gen:
-                        cur_samples = collect_gen_samples(data, motion_gen_path,
-                                                          normalizer, 
-                                                          model.device)
+                    if gen_samples:
+                        cur_samples = [gen_samples[key_in_batch] for key_in_batch in cur_batch_keys]
                         lengths_b = [len(x) for x in cur_samples]
                         motion_b = collate_tensor_with_padding(cur_samples
                                                                ).to(model.device)
@@ -168,7 +155,7 @@ def compute_sim_matrix(model, dataset, keyids, motion_gen_path=None,
             returned[f'sim_matrix_{sett}'] = sim_matrix.cpu().numpy()
     return returned
 
-def get_motion_distances(model, dataset, keyids, motion_gen_path=None,
+def get_motion_distances(model, dataset, keyids, gen_samples,
                          batch_size=256):
     import torch
     import numpy as np
@@ -185,15 +172,6 @@ def get_motion_distances(model, dataset, keyids, motion_gen_path=None,
                                     model_type='smplh',
                                     gender='neutral',
                                     ext='npz').to('cuda').eval();
-
-    if motion_gen_path is not None:
-        curdir = Path(hydra.utils.get_original_cwd())
-        # calculate splits
-        from src.data.motionfix_loader import Normalizer
-        normalizer = Normalizer(curdir/'stats/humanml3d/amass_feats')
-        compute_gen = True
-    else:
-        compute_gen = False
 
     with torch.no_grad():
 
@@ -219,9 +197,7 @@ def get_motion_distances(model, dataset, keyids, motion_gen_path=None,
                         [x['motion_source'] for x in data]).to(model.device)
                     lengths_a = [len(x['motion_source']) for x in data]
                     if compute_gen:
-                        cur_samples = collect_gen_samples(data, motion_gen_path,
-                                                          normalizer, 
-                                                          model.device)
+                        cur_samples = gen_samples
                         lengths_b = [len(x) for x in cur_samples]
                         motion_b = collate_tensor_with_padding(
                             cur_samples).to(model.device)
@@ -235,9 +211,7 @@ def get_motion_distances(model, dataset, keyids, motion_gen_path=None,
                         [x['motion_target'] for x in data]).to(model.device)
                     lengths_a = [len(x['motion_target']) for x in data]
                     if compute_gen:
-                        cur_samples = collect_gen_samples(data, motion_gen_path,
-                                                          normalizer, 
-                                                          model.device)
+                        cur_samples = gen_samples
                         lengths_b = [len(x) for x in cur_samples]
                         motion_b = collate_tensor_with_padding(cur_samples
                                                                ).to(model.device)
@@ -338,6 +312,16 @@ def retrieval(newcfg: DictConfig) -> None:
     datasets = {}
     results = {}
     bs_m2m = 32 # for the batch size metric
+    if motion_gen_path is not None:
+        curdir = Path(hydra.utils.get_original_cwd())
+        # calculate splits
+        from src.data.motionfix_loader import Normalizer
+        normalizer = Normalizer(curdir/'stats/humanml3d/amass_feats')
+        gen_samples = collect_gen_samples(motion_gen_path,
+                                          normalizer, 
+                                          model.device)
+    else: 
+        gen_samples = None
 
     for protocol in protocols:
         logger.info(f"|------Protocol {protocol.upper()}-----|")
@@ -361,7 +345,7 @@ def retrieval(newcfg: DictConfig) -> None:
             if protocol=="normal":
                 res = compute_sim_matrix(
                     model, dataset, dataset.keyids, 
-                    motion_gen_path=motion_gen_path,
+                    gen_samples=gen_samples,
                     batch_size=batch_size,
                 )
                 results.update({key: res for key in ["normal"]})
@@ -390,7 +374,7 @@ def retrieval(newcfg: DictConfig) -> None:
                         model,
                         dataset,
                         np.array(keyids)[idx_batch],
-                        motion_gen_path=motion_gen_path,
+                        gen_samples=gen_samples,
                         batch_size=batch_size,
                     )
                     for idx_batch in idx_batches
@@ -433,7 +417,6 @@ def retrieval(newcfg: DictConfig) -> None:
                 path = os.path.join(save_dir, metric_name)
                 save_metric(path, metrics_dico[metr_name])
                 print(f"\n|-----------|\n")
-            import ipdb; ipdb.set_trace()
             line_for_guo = str_for_tab.replace("\\\&", "&")
             print(f"\n|-----------||-----------||-----------||-----------|\n")
 
