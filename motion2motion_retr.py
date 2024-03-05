@@ -45,16 +45,23 @@ def collect_gen_samples(data_for_keys, motion_gen_path, normalizer, device):
     cur_samples = []
     # it becomes from 
     # translation | root_orient | rots --> trans | rots | root_orient 
-    for i in range(len(data_for_keys)):
+    logger.info("Collecting Generated Samples")
+    from prepare.compute_amass import _get_body_transl_delta_pelv
+
+    for i in tqdm(range(len(data_for_keys))):
         cur_keyid = data_for_keys[i]['keyid']
         fname = f"{str(cur_keyid).zfill(6)}.npy"
         gen_motion_b = np.load(Path(motion_gen_path) / fname,
                                 allow_pickle=True).item()['pose']
         gen_motion_b = torch.from_numpy(gen_motion_b)
-        gen_motion_b_fixed = torch.zeros_like(gen_motion_b)
-        gen_motion_b_fixed[:, -6:] = gen_motion_b[:, 3:9] 
-        gen_motion_b_fixed[:, 3:-6] = gen_motion_b[:, 9:] 
-        gen_motion_b_fixed[:, :3] = gen_motion_b[:, :3] 
+
+        trans = gen_motion_b[..., :3]
+        global_orient_6d = gen_motion_b[..., 3:9]
+        body_pose_6d = gen_motion_b[..., 9:]
+        trans_delta = _get_body_transl_delta_pelv(global_orient_6d,
+                                                  trans)
+        gen_motion_b_fixed = torch.cat([trans_delta, body_pose_6d,
+                                        global_orient_6d], dim=-1)
         gen_motion_b_fixed = normalizer(gen_motion_b_fixed)
         cur_samples.append(gen_motion_b_fixed.to(device))
     return cur_samples
@@ -426,6 +433,7 @@ def retrieval(newcfg: DictConfig) -> None:
                 path = os.path.join(save_dir, metric_name)
                 save_metric(path, metrics_dico[metr_name])
                 print(f"\n|-----------|\n")
+            import ipdb; ipdb.set_trace()
             line_for_guo = str_for_tab.replace("\\\&", "&")
             print(f"\n|-----------||-----------||-----------||-----------|\n")
 
@@ -447,10 +455,16 @@ def retrieval(newcfg: DictConfig) -> None:
                 print(f"\n|-----------|\n")
             line_for_all = str_for_tab.replace("\\\&", "&")
             print(f"\n|-----------||-----------||-----------||-----------|\n")
+            # TODO do this at some point!
+            # run = wandb.init()
+            # my_table = wandb.Table(columns=["a", "b"],
+            #                        data=[["1a", "1b"], ["2a", "2b"]])
+            # run.log({"table_key": my_table})
         if newcfg.samples_path is not None:
             short_expname = newcfg.samples_path.replace('/is/cluster/fast/nathanasiou/logs/motionfix-sigg/', '')
         else:
             short_expname = 'GroundTruth Results'
+
         logger.info(f"Testing done, metrics saved in:\n{path}")
         logger.info(f"-----------")
 
