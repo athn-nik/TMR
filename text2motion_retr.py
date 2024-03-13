@@ -181,7 +181,7 @@ def retrieval(newcfg: DictConfig) -> None:
             datasets.update(
                 {key: dataset for key in ["normal", "guo"]}
             )
-        import ipdb; ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
         if gen_samples is not None:
             gen_samples = {k:v for k, v in gen_samples.items() if k in dataset.keyids}
         dataset = datasets[protocol]
@@ -264,7 +264,7 @@ def retrieval(newcfg: DictConfig) -> None:
             # my_table = wandb.Table(columns=["a", "b"],
             #                        data=[["1a", "1b"], ["2a", "2b"]])
             # run.log({"table_key": my_table})
-        import ipdb; ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
 
         if newcfg.samples_path is not None:
             short_expname = newcfg.samples_path.replace('/is/cluster/fast/nathanasiou/logs/motionfix-sigg/', '')
@@ -275,8 +275,8 @@ def retrieval(newcfg: DictConfig) -> None:
         logger.info(f"-----------")
 
     print(f'----Experiment Folder----\n\n{short_expname}')
-    print(f'----Batches of {bs_m2m}----\n\n{line_for_guo}')
-    print(f'----Full Set----\n\n{line_for_all}')
+    # print(f'----Batches of {bs_m2m}----\n\n{line_for_guo}')
+    # print(f'----Full Set----\n\n{line_for_all}')
 
 if __name__ == "__main__":
     retrieval()
