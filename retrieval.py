@@ -24,7 +24,6 @@ def compute_sim_matrix(model, dataset, keyids, batch_size=256):
 
     nsplit = int(np.ceil(len(dataset) / batch_size))
     with torch.inference_mode():
-        import ipdb; ipdb.set_trace()
         all_data = [dataset.load_keyid(keyid) for keyid in keyids]
         all_data_splitted = np.array_split(all_data, nsplit)
 

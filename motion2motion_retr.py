@@ -53,7 +53,7 @@ def collect_gen_samples(motion_gen_path, normalizer, device):
     for fname in tqdm(sample_files):
         keyid = str(Path(fname).name).replace('.npy', '')
         gen_motion_b = np.load(fname,
-                                allow_pickle=True).item()['pose']
+                               allow_pickle=True).item()['pose']
         gen_motion_b = torch.from_numpy(gen_motion_b)
         trans = gen_motion_b[..., :3]
         global_orient_6d = gen_motion_b[..., 3:9]
@@ -111,7 +111,6 @@ def compute_sim_matrix(model, dataset, keyids, gen_samples,
                            [x['motion_target'] for x in data]).to(model.device)
                         lengths_b = [len(x['motion_target']) for x in data]
 
-
                     masks_a = length_to_mask(lengths_a, device=motion_a.device)
                     masks_b = length_to_mask(lengths_b, device=motion_b.device)
                     motion_a_dict = {'length': lengths_a, 'mask': masks_a,
@@ -145,7 +144,6 @@ def compute_sim_matrix(model, dataset, keyids, gen_samples,
                                             sample_mean=True)
                 latent_motion_B = model.encode(motion_b_dict,
                                             sample_mean=True)
-
                 latent_motions_A.append(latent_motion_A)
                 latent_motions_B.append(latent_motion_B)
 
@@ -196,7 +194,7 @@ def get_motion_distances(model, dataset, keyids, gen_samples,
                     motion_a = collate_tensor_with_padding(
                         [x['motion_source'] for x in data]).to(model.device)
                     lengths_a = [len(x['motion_source']) for x in data]
-                    if compute_gen:
+                    if gen_samples:
                         cur_samples = gen_samples
                         lengths_b = [len(x) for x in cur_samples]
                         motion_b = collate_tensor_with_padding(
@@ -210,7 +208,7 @@ def get_motion_distances(model, dataset, keyids, gen_samples,
                     motion_a = collate_tensor_with_padding(
                         [x['motion_target'] for x in data]).to(model.device)
                     lengths_a = [len(x['motion_target']) for x in data]
-                    if compute_gen:
+                    if gen_samples:
                         cur_samples = gen_samples
                         lengths_b = [len(x) for x in cur_samples]
                         motion_b = collate_tensor_with_padding(cur_samples
@@ -333,11 +331,16 @@ def retrieval(newcfg: DictConfig) -> None:
                 dataset = SincSynthLoader()
             else:
                 dataset = MotionFixLoader()
+            rms = ['002274', '002273', '002223', '002226', '002265', '002264']
+            for k in rms:
+                dataset.motions.pop(k)
+                dataset.keyids.remove(k)
+
             # TODO Load the motion editing test set
-            
             datasets.update(
                 {key: dataset for key in ["normal", "guo"]}
             )
+        gen_samples = {k:v for k, v in gen_samples.items() if k in dataset.motions.keys()}
         dataset = datasets[protocol]
 
         # Compute sim_matrix for each protocol

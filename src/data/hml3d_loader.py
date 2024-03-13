@@ -13,21 +13,14 @@ from src.data.utils import cast_dict_to_tensors, freeze
 from src.data.transforms3d import transform_body_pose, canonicalize_rotations
 from einops import rearrange
 
-class MotionFixLoader(Dataset):
-# 'src.data.bodilex.BodilexDataModule',
-#  'datapath = data/amass_bodilex_v5.pth.tar',
-#  'smplh_path': 'data/body_models',
-#  'load_splits': ['train', 'val', 'test'],
-#   'preproc': {'stats_file': '/home/nathanasiou/Desktop/conditional_action_gen/modilex/deps/stats/statistics_bodilex.npy'
-#               ,
-#             'load_feats': ['body_transl_delta_pelv', 'body_orient', 'body_pose'],
+class Hml3DLoader(Dataset):
     def __init__(self,
                  datapath: str = "",
                  smplh_path: str = "",
                  rot_repr: str = "6d",
                  **kwargs):
         # v11 is the next one 
-        self.datapath = 'datasets/bodilex/amass_bodilex_v9.pth.tar'
+        self.datapath = 'datasets/hml3d_processed/test.pth.tar'
         self.collate_fn = lambda b: collate_batch_last_padding(b, load_feats)
         self.rot_repr = rot_repr
         curdir = Path(hydra.utils.get_original_cwd())
@@ -43,45 +36,19 @@ class MotionFixLoader(Dataset):
         freeze(self.body_model)
         ds_db_path = Path(curdir / self.datapath)
 
-        dataset_dict_raw = joblib.load(ds_db_path)
-        dataset_dict_raw = cast_dict_to_tensors(dataset_dict_raw)
+        dataset_list_raw = joblib.load(ds_db_path)
+        dataset_list_raw = cast_dict_to_tensors(dataset_list_raw)
+        dataset_dict_raw = {d['id']: d for d in dataset_list_raw}
+
         for k, v in dataset_dict_raw.items():
-            
-            if len(v['motion_source']['rots'].shape) > 2:
-                rots_flat_src = v['motion_source']['rots'].flatten(-2).float()
-                dataset_dict_raw[k]['motion_source']['rots'] = rots_flat_src
-            if len(v['motion_target']['rots'].shape) > 2:
-                rots_flat_tgt = v['motion_target']['rots'].flatten(-2).float()
-                dataset_dict_raw[k]['motion_target']['rots'] = rots_flat_tgt
-
-            for mtype in ['motion_source', 'motion_target']:
-            
-                rots_can, trans_can = self._canonica_facefront(v[mtype]['rots'],
-                                                               v[mtype]['trans']
-                                                               )
-                dataset_dict_raw[k][mtype]['rots'] = rots_can
-                dataset_dict_raw[k][mtype]['trans'] = trans_can
-                seqlen, jts_no = rots_can.shape[:2]
-                
-                rots_can_rotm = transform_body_pose(rots_can,
-                                                  'aa->rot')
-                # self.body_model.batch_size = seqlen * jts_no
-
-                jts_can_ds = self.body_model.smpl_forward_fast(transl=trans_can,
-                                                 body_pose=rots_can_rotm[:, 1:],
-                                             global_orient=rots_can_rotm[:, :1])
-
-                jts_can = jts_can_ds.joints[:, :22]
-                dataset_dict_raw[k][mtype]['joint_positions'] = jts_can
-
-        data_dict = cast_dict_to_tensors(dataset_dict_raw)
-        data_ids = list(data_dict.keys())
+            assert v['joint_positions'].shape[0] == v['rots'].shape[0] 
+            if v['rots'].shape[0] > 300:
+                v['rots'] = v['rots'][:300]
+                v['trans'] = v['trans'][:300]
+                v['joint_positions'] = v['joint_positions'][:300]
+        data_ids = list(dataset_dict_raw.keys())
         from src.data.utils import read_json
-        splits = read_json(f'{os.path.dirname(Path(curdir / self.datapath))}/splits.json')
-        test_ids = splits['test']
-        self.motions = {}
-        for test_id in test_ids:
-            self.motions[test_id] = data_dict[test_id]
+        self.motions = dataset_dict_raw
         self.keyids = list(self.motions.keys())
 
     def __len__(self):
