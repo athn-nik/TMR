@@ -263,7 +263,6 @@ def retrieval(newcfg: DictConfig) -> None:
             # my_table = wandb.Table(columns=["a", "b"],
             #                        data=[["1a", "1b"], ["2a", "2b"]])
             # run.log({"table_key": my_table})
-
         if newcfg.samples_path is not None:
             short_expname = newcfg.samples_path.replace('/is/cluster/fast/nathanasiou/logs/motionfix-sigg/', '')
         else:
