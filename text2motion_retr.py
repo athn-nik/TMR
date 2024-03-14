@@ -150,7 +150,7 @@ def retrieval(newcfg: DictConfig) -> None:
     import numpy as np
     from hydra.utils import instantiate
     from src.load import load_model_from_cfg
-    from src.model.metrics import all_contrastive_metrics_mot2mot, print_latex_metrics_m2m
+    from src.model.metrics import all_contrastive_metrics_text2mot, print_latex_metrics_t2m
 
     pl.seed_everything(cfg.seed)
 
@@ -181,7 +181,6 @@ def retrieval(newcfg: DictConfig) -> None:
             datasets.update(
                 {key: dataset for key in ["normal", "guo"]}
             )
-        import ipdb; ipdb.set_trace()
         if gen_samples is not None:
             gen_samples = {k:v for k, v in gen_samples.items() if k in dataset.keyids}
         dataset = datasets[protocol]
@@ -232,14 +231,14 @@ def retrieval(newcfg: DictConfig) -> None:
                 # )
                 
         result = results[protocol]
-        from src.model.metrics import all_contrastive_metrics, print_latex_metrics
+        from src.model.metrics import all_contrastive_metrics_text2mot, print_latex_metrics
 
         # Compute the metrics
         if protocol == "guo":
             all_metrics = []
             for x in result:
                 sim_matrix = x["sim_matrix"]
-                metrics = all_contrastive_metrics(sim_matrix, rounding=None)
+                metrics = all_contrastive_metrics_text2mot(sim_matrix, rounding=None)
                 all_metrics.append(metrics)
 
             avg_metrics = {}
@@ -256,15 +255,14 @@ def retrieval(newcfg: DictConfig) -> None:
 
             protocol_name = protocol
             emb, threshold = None, None
-            metrics = all_contrastive_metrics(sim_matrix, emb, threshold=threshold)
+            metrics = all_contrastive_metrics_text2mot(sim_matrix, emb, threshold=threshold)
 
-        print_latex_metrics(metrics)
+        print_latex_metrics_t2m(metrics)
             # TODO do this at some point!
             # run = wandb.init()
             # my_table = wandb.Table(columns=["a", "b"],
             #                        data=[["1a", "1b"], ["2a", "2b"]])
             # run.log({"table_key": my_table})
-        import ipdb; ipdb.set_trace()
 
         if newcfg.samples_path is not None:
             short_expname = newcfg.samples_path.replace('/is/cluster/fast/nathanasiou/logs/motionfix-sigg/', '')
@@ -275,8 +273,8 @@ def retrieval(newcfg: DictConfig) -> None:
         logger.info(f"-----------")
 
     print(f'----Experiment Folder----\n\n{short_expname}')
-    print(f'----Batches of {bs_m2m}----\n\n{line_for_guo}')
-    print(f'----Full Set----\n\n{line_for_all}')
+    # print(f'----Batches of {bs_m2m}----\n\n{line_for_guo}')
+    # print(f'----Full Set----\n\n{line_for_all}')
 
 if __name__ == "__main__":
     retrieval()

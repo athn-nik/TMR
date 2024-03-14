@@ -1,10 +1,11 @@
 import numpy as np
 
 
-def print_latex_metrics(metrics):
+def print_latex_metrics_t2m(metrics):
     vals = [str(x).zfill(2) for x in [1, 2, 3, 5, 10]]
-    t2m_keys = [f"t2m/R{i}" for i in vals] + ["t2m/MedR"]
-    m2t_keys = [f"m2t/R{i}" for i in vals] + ["m2t/MedR"]
+
+    t2m_keys = [f"t2m/R{i}" for i in vals] + ["t2m/MedR"] + ["t2m/AvgR"]
+    m2t_keys = [f"m2t/R{i}" for i in vals] + ["m2t/MedR"] + ["m2t/AvgR"]
 
     keys = t2m_keys + m2t_keys
 
@@ -20,6 +21,7 @@ def print_latex_metrics(metrics):
     print(dico)
     print("Number of samples: {}".format(int(metrics["t2m/len"])))
     print(str_)
+    return str_
 
 def print_latex_metrics_m2m(metrics):
     vals = [str(x).zfill(2) for x in [1, 2, 3, 5, 10]]
@@ -60,7 +62,7 @@ def all_contrastive_metrics_mot2mot(
  
     return all_m
 
-def all_contrastive_metrics(
+def all_contrastive_metrics_text2mot(
     sims, emb=None, threshold=None, rounding=2, return_cols=False
 ):
     text_selfsim = None

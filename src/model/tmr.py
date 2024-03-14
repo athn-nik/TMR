@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 from .temos import TEMOS
 from .losses import InfoNCE_with_filtering
-from .metrics import all_contrastive_metrics
+from .metrics import all_contrastive_metrics_text2mot
 
 
 # x.T will be deprecated in pytorch
@@ -174,7 +174,7 @@ class TMR(TEMOS):
         # Compute the similarity matrix
         sim_matrix = get_sim_matrix(t_latents, m_latents).cpu().numpy()
 
-        contrastive_metrics = all_contrastive_metrics(
+        contrastive_metrics = all_contrastive_metrics_text2mot(
             sim_matrix,
             emb=sent_emb.cpu().numpy(),
             threshold=self.threshold_selfsim_metrics,
