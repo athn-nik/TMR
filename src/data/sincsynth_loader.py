@@ -26,7 +26,7 @@ class SincSynthLoader(Dataset):
         curdir = Path(hydra.utils.get_original_cwd())
 
         if test_only:
-            self.datapath = 'datasets/sinc_synth/sinc_synth_edits_v1.pth.tar'
+            self.datapath = 'datasets/sinc_synth/sinc_synth_edits_v4.pth.tar'
             self.normalizer = Normalizer(curdir/'stats/humanml3d/amass_feats')
 
             ds_db_path = Path(curdir / self.datapath)
