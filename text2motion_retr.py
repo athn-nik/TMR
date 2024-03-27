@@ -231,7 +231,7 @@ def retrieval(newcfg: DictConfig) -> None:
                 # )
                 
         result = results[protocol]
-        from src.model.metrics import all_contrastive_metrics_text2mot, print_latex_metrics
+        from src.model.metrics import all_contrastive_metrics_text2mot, print_latex_metrics_t2m
 
         # Compute the metrics
         if protocol == "guo":
