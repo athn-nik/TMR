@@ -331,16 +331,17 @@ def retrieval(newcfg: DictConfig) -> None:
                 dataset = SincSynthLoader()
             else:
                 dataset = MotionFixLoader()
-            rms = ['002274', '002273', '002223', '002226', '002265', '002264']
-            for k in rms:
-                dataset.motions.pop(k)
-                dataset.keyids.remove(k)
+            # rms = ['002274', '002273', '002223', '002226', '002265', '002264']
+            # for k in rms:
+            #     dataset.motions.pop(k)
+            #     dataset.keyids.remove(k)
 
             # TODO Load the motion editing test set
             datasets.update(
                 {key: dataset for key in ["normal", "guo"]}
             )
-        gen_samples = {k:v for k, v in gen_samples.items() if k in dataset.motions.keys()}
+        if gen_samples is not None:
+            gen_samples = {k:v for k, v in gen_samples.items() if k in dataset.motions.keys()}
         dataset = datasets[protocol]
 
         # Compute sim_matrix for each protocol
