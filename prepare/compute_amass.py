@@ -40,6 +40,13 @@ def _get_body_transl_delta_pelv(pelvis_orient, trans):
     trans_vel_pelv[0] = 0  # zero out velocity of first frame
     return trans_vel_pelv
 
+def _get_body_transl(trans):
+    """
+    get body pelvis tranlation delta relative to pelvis coord.frame
+    v_i = t_i - t_{i-1} relative to R_{i-1}
+    """
+    trans = to_tensor(trans)
+    return trans
 
 def _get_body_orient(orient):
     """get body global orientation"""

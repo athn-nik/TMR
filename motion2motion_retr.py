@@ -7,6 +7,10 @@ from tqdm import tqdm
 from pathlib import Path
 import numpy as np
 import torch
+from typing import List, Dict
+from torch import Tensor
+
+from src.data.text import write_json, load_json
 
 logger = logging.getLogger(__name__)
 
@@ -22,9 +26,13 @@ def save_metric(path, metrics):
     strings = yaml.dump(metrics, indent=4, sort_keys=False)
     with open(path, "w") as f:
         f.write(strings)
-from typing import List, Dict
-import torch
-from torch import Tensor
+
+def line2dict(line):
+    names_of_metrics = ["R@1_s2t", "R@2_s2t", "R@3_s2t", "R@5_s2t", "R@10_s2t", "MedR_s2t", "AvgR_s2t",
+                        "R@1", "R@2", "R@3", "R@5", "R@10", "MedR", "AvgR"]
+    metrics_nos = line.replace('\\', '').split('&')
+    metrics_nos = [x.strip() for x in metrics_nos if x]
+    return dict(zip(names_of_metrics, metrics_nos))
 
 def lengths_to_mask_njoints(lengths: List[int], njoints: int, device: torch.device) -> Tensor:
     # joints*lenghts
@@ -43,6 +51,7 @@ def lengths_to_mask(lengths: List[int], device: torch.device) -> Tensor:
 
 def collect_gen_samples(motion_gen_path, normalizer, device):
     cur_samples = {}
+    cur_samples_raw = {}
     # it becomes from 
     # translation | root_orient | rots --> trans | rots | root_orient 
     logger.info("Collecting Generated Samples")
@@ -63,8 +72,10 @@ def collect_gen_samples(motion_gen_path, normalizer, device):
         gen_motion_b_fixed = torch.cat([trans_delta, body_pose_6d,
                                         global_orient_6d], dim=-1)
         gen_motion_b_fixed = normalizer(gen_motion_b_fixed)
-        cur_samples[keyid] = gen_motion_b_fixed.to(device) 
-    return cur_samples
+        cur_samples[keyid] = gen_motion_b_fixed.to(device)
+        cur_samples_raw[keyid] = torch.cat([trans, global_orient_6d, 
+                                            body_pose_6d], dim=-1).to(device)
+    return cur_samples, cur_samples_raw
 
 def compute_sim_matrix(model, dataset, keyids, gen_samples,
                        batch_size=256):
@@ -155,10 +166,9 @@ def compute_sim_matrix(model, dataset, keyids, gen_samples,
 
 def get_motion_distances(model, dataset, keyids, gen_samples,
                          batch_size=256):
+
     import torch
     import numpy as np
-    from src.data.collate import collate_text_motion
-    from src.model.tmr import get_sim_matrix
     import numpy as np
     device = model.device
     if batch_size > len(dataset):
@@ -173,7 +183,7 @@ def get_motion_distances(model, dataset, keyids, gen_samples,
 
     with torch.no_grad():
 
-        all_data = [dataset.load_keyid(keyid) for keyid in keyids]
+        all_data = [dataset.load_keyid_raw(keyid) for keyid in keyids]
         if nsplit > len(all_data):
             nsplit = len(all_data)
         all_data_splitted = np.array_split(all_data, nsplit)
@@ -189,13 +199,14 @@ def get_motion_distances(model, dataset, keyids, gen_samples,
                 # batch = collate_text_motion(data, device=device)
                 from src.data.collate import collate_tensor_with_padding, length_to_mask
                 # TODO load the motions for the generations
+                keyids_of_cursplit = [x['keyid'] for x in data]
                 # Text is already encoded
                 if sett == 's_t':
                     motion_a = collate_tensor_with_padding(
                         [x['motion_source'] for x in data]).to(model.device)
                     lengths_a = [len(x['motion_source']) for x in data]
                     if gen_samples:
-                        cur_samples = gen_samples
+                        cur_samples = [gen_samples[kd] for kd in keyids_of_cursplit]
                         lengths_b = [len(x) for x in cur_samples]
                         motion_b = collate_tensor_with_padding(
                             cur_samples).to(model.device)
@@ -209,10 +220,16 @@ def get_motion_distances(model, dataset, keyids, gen_samples,
                         [x['motion_target'] for x in data]).to(model.device)
                     lengths_a = [len(x['motion_target']) for x in data]
                     if gen_samples:
-                        cur_samples = gen_samples
+                        cur_samples = [gen_samples[kd] for kd in keyids_of_cursplit]
                         lengths_b = [len(x) for x in cur_samples]
-                        motion_b = collate_tensor_with_padding(cur_samples
-                                                               ).to(model.device)
+                        if motion_a.shape[1] < cur_samples[0].shape[0]:
+                            cur_samples = [cs[:motion_a.shape[1]] for cs in cur_samples]
+                            motion_b = collate_tensor_with_padding(cur_samples
+                                                                ).to(model.device)
+                        else:
+                            motion_b = collate_tensor_with_padding(cur_samples
+                                                                ).to(model.device)
+                            
                     else:
                         motion_b = collate_tensor_with_padding([
                             x['motion_target'] for x in data]).to(
@@ -229,22 +246,56 @@ def get_motion_distances(model, dataset, keyids, gen_samples,
 
                 for s, e in sliding_window(ids_for_smpl):
                     motions_a.append(run_smpl_fwd(motion_a[s:e, :, :3],
-                                                motion_a[s:e, :, -6:],
-                                                motion_a[s:e, :, 3:-6],
-                                                body_model))
+                                                motion_a[s:e, :, 3:9],
+                                                motion_a[s:e, :, 9:],
+                                                body_model).detach().cpu())
                     motions_b.append(run_smpl_fwd(motion_b[s:e, :, :3],
-                                                motion_b[s:e, :, -6:],
-                                                motion_b[s:e, :, 3:-6],
-                                                body_model))
+                                                motion_b[s:e, :, 3:9],
+                                                motion_b[s:e, :, 9:],
+                                                body_model).detach().cpu())
                 tot_lens_a.extend(lengths_a)
                 tot_lens_b.extend(lengths_b)
 
             mask_a = lengths_to_mask(tot_lens_a, device).detach().cpu()
             mask_b = lengths_to_mask(tot_lens_b, device).detach().cpu()
-            from torch.nn.functional import l1_loss, mse_loss, smooth_l1_loss
 
-            motions_a = torch.cat(motions_a).detach().cpu()
-            motions_b = torch.cat(motions_b).detach().cpu()
+            from torch.nn.functional import l1_loss, mse_loss, smooth_l1_loss
+            max_a = -5
+            for x in motions_a:
+                if len(x[0]) > max_a:
+                    max_a = len(x[0])
+            max_b = -5
+            for x in motions_b:
+                if len(x[0]) > max_b:
+                    max_b = len(x[0])
+
+            motions_a_proc = []
+            for x in motions_a:
+                if len(x[0]) != max_a:
+                    zeros_to_add = torch.zeros(x.size(0),
+                                               max_a - len(x[0]), 
+                                               6890, 3)
+                    motions_a_proc.append(torch.cat((x, 
+                                                     zeros_to_add), dim=1))
+                else:
+                    motions_a_proc.append(x)
+
+            motions_b_proc = []
+            for x in motions_b:
+                if len(x[0]) != max_b:
+                    zeros_to_add = torch.zeros(x.size(0),
+                                               max_b - len(x[0]), 
+                                               6890, 3)
+                    motions_b_proc.append(torch.cat((x, 
+                                                     zeros_to_add), dim=1))
+                else:
+                    motions_b_proc.append(x)
+
+
+            from einops import rearrange
+            motions_a = torch.cat(motions_a_proc).detach().cpu()
+            motions_b = torch.cat(motions_b_proc).detach().cpu()
+
             global_edit_accuracy = mse_loss(100*motions_a, 100*motions_b, 
                                            reduction='none').flatten(-2,-1).mean(-1)*mask_a
             tot_gl_edacc = global_edit_accuracy.sum() / mask_a.sum()
@@ -315,11 +366,12 @@ def retrieval(newcfg: DictConfig) -> None:
         # calculate splits
         from src.data.motionfix_loader import Normalizer
         normalizer = Normalizer(curdir/'stats/humanml3d/amass_feats')
-        gen_samples = collect_gen_samples(motion_gen_path,
+        gen_samples, gen_samples_raw = collect_gen_samples(motion_gen_path,
                                           normalizer, 
                                           model.device)
     else: 
         gen_samples = None
+        gen_samples_raw = None
 
     for protocol in protocols:
         logger.info(f"|------Protocol {protocol.upper()}-----|")
@@ -355,7 +407,7 @@ def retrieval(newcfg: DictConfig) -> None:
                 results.update({key: res for key in ["normal"]})
                 # dists = get_motion_distances(
                 #     model, dataset, dataset.keyids, 
-                #     motion_gen_path=motion_gen_path,
+                #     gen_samples=gen_samples_raw,
                 #     batch_size=batch_size,
                 # )
 
@@ -383,12 +435,18 @@ def retrieval(newcfg: DictConfig) -> None:
                     )
                     for idx_batch in idx_batches
                 ]
-                # dists = get_motion_distances(
-                #     model, dataset, dataset.keyids, 
-                #     motion_gen_path=motion_gen_path,
-                #     batch_size=batch_size,
-                # )
-                
+
+                # results_v2v["guo"] = [
+                #     get_motion_distances(
+                #         model,
+                #         dataset,
+                #         np.array(keyids)[idx_batch],
+                #         gen_samples=gen_samples_raw,
+                #         batch_size=batch_size,
+                #     )
+                #     for idx_batch in idx_batches
+                # ]
+
         result = results[protocol]
 
         # Compute the metrics
@@ -454,6 +512,12 @@ def retrieval(newcfg: DictConfig) -> None:
 
         logger.info(f"Testing done, metrics saved in:\n{path}")
         logger.info(f"-----------")
+    import ipdb; ipdb.set_trace()
+    dict_batches = line2dict(line_for_guo)
+    dict_full = line2dict(line_for_all)
+    
+    write_json(dict_batches, Path(motion_gen_path) / 'batches_res.json')
+    write_json(dict_full, Path(motion_gen_path) / 'all_res.json')
 
     print(f'----Experiment Folder----\n\n{short_expname}')
     print(f'----Batches of {bs_m2m}----\n\n{line_for_guo}')
