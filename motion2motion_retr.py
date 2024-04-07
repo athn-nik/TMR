@@ -64,6 +64,7 @@ def collect_gen_samples(motion_gen_path, normalizer, device):
                                         global_orient_6d], dim=-1)
         gen_motion_b_fixed = normalizer(gen_motion_b_fixed)
         cur_samples[keyid] = gen_motion_b_fixed.to(device) 
+    # import ipdb;ipdb.set_trace()
     return cur_samples
 
 def compute_sim_matrix(model, dataset, keyids, gen_samples,
