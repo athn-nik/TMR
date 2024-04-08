@@ -3,6 +3,8 @@ logs
 outputs
 wandb
 experiments
+condor_logs
+cluster_scripts
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
