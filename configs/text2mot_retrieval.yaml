@@ -4,7 +4,7 @@ defaults:
 
 device: cuda
 
-run_dir: ???
+run_dir: outputs/tmr_humanml3d_amass_feats
 protocol: #  (is all 4), normal (a), threshold (b), nsim (c), guo (d)
   - normal
   - guo
