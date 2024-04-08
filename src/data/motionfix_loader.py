@@ -142,23 +142,32 @@ class MotionFixLoader(Dataset):
         }
         return output
 
-    # def __call__(self, path):
-    #     # check if motion path exists
-    #     if not os.path.exists(os.path.join(self.base_dir, path + ".npy")):
-    #         self.not_found += 1
-    #     motion_path = os.path.join(self.base_dir, path + ".npy")
+    def load_keyid_raw(self, keyid):
+        from prepare.compute_amass import _get_body_orient, _get_body_pose, _get_body_transl
+        source_m = self.motions[keyid]['motion_source']
+        target_m = self.motions[keyid]['motion_target']
+        text = self.motions[keyid]['text']
+        # Take the first one for testing/validation
+        # Otherwise take a random one        
+        pose6d_src = _get_body_pose(source_m['rots'])
+        orient6d_src = _get_body_orient(source_m['rots'][..., :3])
+        trans_src = _get_body_transl(source_m['trans'])
+        features_source = torch.cat([trans_src, orient6d_src, pose6d_src],
+                                    dim=-1)
 
-    #     if path not in self.motions:
-    #         motion = np.load(motion_path)
-    #         motion = torch.from_numpy(motion).to(torch.float)
-    #         if self.normalizer is not None:
-    #             motion = self.normalizer(motion)
-    #         self.motions[path] = motion
-    #     motion = self.motions[path]
+        pose6d_tgt = _get_body_pose(target_m['rots'])
+        orient6d_tgt = _get_body_orient(target_m['rots'][..., :3])
+        trans_tgt = _get_body_transl(target_m['trans'])
+        features_target = torch.cat([trans_tgt, orient6d_tgt, pose6d_tgt],
+                                    dim=-1)
 
-    #     x_dict = {"x": motion, "length": len(motion)}
-    #     return x_dict
-
+        output = {
+            "motion_source": features_source,
+            "motion_target": features_target,
+            "text": text,
+            "keyid": keyid,
+        }
+        return output
 
 class Normalizer:
     def __init__(self, base_dir: str, eps: float = 1e-12, disable: bool = False):
