@@ -82,14 +82,7 @@ def launch_task_on_cluster(configs: List[Dict[str, str]],
     no_gpus = 1
     for experiment in configs: 
         extra_args = experiment["args"]
-        start = extra_args.find("samples_path=") + len("samples_path=")
-        extracted_str = extra_args[start:].strip()
-        mean_name = extracted_str.replace("/", "__")
-
-        start_dataset = extra_args.find("dataset='") + len("dataset='")
-        end_dataset = extra_args.find("'", start_dataset)
-        dataset_name = extra_args[start_dataset:end_dataset]
-        run_id = f'ds__{dataset_name}'
+        run_id = f'eval_metrics'
         no_gpus = experiment["gpus"]
         sub_file = SUBMISSION_TEMPLATE
         bash = 'export HYDRA_FULL_ERROR=1 export PYTHONFAULTHANDLER=1\nexport PYTHONUNBUFFERED=1\nexport PATH=$PATH\n' \
@@ -97,7 +90,6 @@ def launch_task_on_cluster(configs: List[Dict[str, str]],
                 f'{extra_args}'
         shell_dir.mkdir(parents=True, exist_ok=True)
         run_cmd_path = shell_dir / (run_id + '_' + ID_EXP +".sh")
-
         with open(run_cmd_path, 'w') as f:
             f.write(bash)
         os.chmod(run_cmd_path, stat.S_IRWXU)
@@ -109,7 +101,7 @@ def launch_task_on_cluster(configs: List[Dict[str, str]],
                         ("RUN_SCRIPT", os.fspath(run_cmd_path))]:
             sub_file = sub_file.replace(x, y)
 
-        submission_path = condor_dir / log / (mean_name + ID_EXP + ".sub")
+        submission_path = condor_dir / log / ('eval_metrs' + ID_EXP + ".sub")
         logdir_condor = condor_dir / log / 'logs'
         logdir_condor.mkdir(parents=True, exist_ok=True)
 

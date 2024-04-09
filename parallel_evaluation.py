@@ -5,7 +5,9 @@ import argparse
 import os
 
 def run(cmd):
-    print(f"Executing: {' '.join(cmd)}")
+    print(f"---------Executing-----------\n {' '.join(cmd)}")
+    #import ipdb; ipdb.set_trace()
+
     x = subprocess.run(cmd)
 
 def main_loop(command, exp_paths, data):
@@ -20,9 +22,10 @@ def main_loop(command, exp_paths, data):
     for fd in paths_to_eval:
         cur_cmd = list(cmd_eval)
         idx_of_exp = cur_cmd.index("samples_path=FOLDER")
-        cur_cmd[idx_of_exp] = f"samples_path={str(fd)}"
-        list_of_args = ' '.join([f"data='{data}'"])
-        cur_cmd.extend([list_of_args])
+        cur_cmd[idx_of_exp] = f"samples_path={str(fd)} dataset={data}"
+        # list_of_args = ' '.join([f'data={data}"'])
+        # cur_cmd.extend([list_of_args])
+        # `print(cur_cmd)
         run(cur_cmd)
         time.sleep(0.2)
         cmd_no += 1
@@ -48,8 +51,9 @@ if __name__ == "__main__":
         base_dir_of_samples = extras_args[start_index:]
     else:
         base_dir_of_samples = extras_args[start_index:end_index]
-    samples_dirs_list = [os.path.join(base_dir_of_samples, d) for d in os.scandir(base_dir_of_samples)
-                         if d.is_dir()]
+    samples_dirs_list = [ f.path for f in os.scandir(base_dir_of_samples) if f.is_dir() ]
+    #samples_dirs_list = [os.path.join(base_dir_of_samples, d) for d in os.scandir(base_dir_of_samples)
+    #                     if d.is_dir()]
     extras_args = extras_args.replace(base_dir_of_samples, 'FOLDER')
     print('---------------------------------------------------')
     assert dataset in ['bodilex', 'sinc_synth', 'hml3d']
