@@ -517,7 +517,9 @@ def retrieval(newcfg: DictConfig) -> None:
     
     write_json(dict_batches, Path(motion_gen_path) / 'batches_res.json')
     write_json(dict_full, Path(motion_gen_path) / 'all_res.json')
-
+    with open(Path(motion_gen_path) / 'for_latex.txt', 'w') as f:
+        f.write(f'{line_for_all}\n')
+        f.write(f'{line_for_guo}\n')
     print(f'----Experiment Folder----\n\n{short_expname}')
     print(f'----Batches of {bs_m2m}----\n\n{line_for_guo}')
     print(f'----Full Set----\n\n{line_for_all}')
