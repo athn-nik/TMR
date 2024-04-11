@@ -328,6 +328,18 @@ def run_smpl_fwd(body_transl, body_orient, body_pose, body_model,
                                                         '6d->rot')).vertices
     return verts.reshape(bs, seqlen, -1, 3)
 
+def shorten_metric_line(line_to_shorten):
+    # Split the string into a list of numbers
+    numbers = line_to_shorten.split('&')
+
+    # Remove the elements at the 4th, 5th, 6th, 11th, 12th, and 13th indices
+    indices_to_remove = [4, 5, 6, 11, 12, 13]
+    for index in sorted(indices_to_remove, reverse=True):
+        del numbers[index]
+
+    # Join the list back into a string
+    return '&'.join(numbers)
+
 
 @hydra.main(version_base=None, config_path="configs", 
             config_name="mot2mot_retrieval")
@@ -512,14 +524,22 @@ def retrieval(newcfg: DictConfig) -> None:
 
         logger.info(f"Testing done, metrics saved in:\n{path}")
         logger.info(f"-----------")
+    
     dict_batches = line2dict(line_for_guo)
     dict_full = line2dict(line_for_all)
     
+    short_guo_line = shorten_metric_line(line_for_guo)
+    short_all_line = shorten_metric_line(line_for_all)
+
     write_json(dict_batches, Path(motion_gen_path) / 'batches_res.json')
     write_json(dict_full, Path(motion_gen_path) / 'all_res.json')
     with open(Path(motion_gen_path) / 'for_latex.txt', 'w') as f:
         f.write(f'{line_for_all}\n')
         f.write(f'{line_for_guo}\n')
+        f.write(f'=============Shorter Metrics=============\n')
+        f.write(f'{short_all_line}\n')
+        f.write(f'{short_guo_line}\n')
+
     print(f'----Experiment Folder----\n\n{short_expname}')
     print(f'----Batches of {bs_m2m}----\n\n{line_for_guo}')
     print(f'----Full Set----\n\n{line_for_all}')
