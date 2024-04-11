@@ -78,7 +78,7 @@ def collect_gen_samples(motion_gen_path, normalizer, device):
     return cur_samples, cur_samples_raw
 
 def compute_sim_matrix(model, dataset, keyids, gen_samples,
-                       batch_size=256):
+                       batch_size=256, progress=True):
     import torch
     import numpy as np
     from src.data.collate import collate_text_motion
@@ -102,7 +102,11 @@ def compute_sim_matrix(model, dataset, keyids, gen_samples,
             cur_samples = []
             latent_motions_A = []
             latent_motions_B = []
-            for data in tqdm(all_data_splitted, leave=False):
+            if progress:
+                data_iter = tqdm(all_data_splitted, leave=False)
+            else:
+                data_iter = all_data_splitted
+            for data in data_iter:
                 # batch = collate_text_motion(data, device=device)
                 from src.data.collate import collate_tensor_with_padding, length_to_mask
                 cur_batch_keys = [x['keyid'] for x in data]
@@ -425,17 +429,13 @@ def retrieval(newcfg: DictConfig) -> None:
 
                 # split into batches of 32
                 # batched_keyids = [ [32], [32], [...]]
-                results["guo"] = [
-                    compute_sim_matrix(
-                        model,
-                        dataset,
-                        np.array(keyids)[idx_batch],
-                        gen_samples=gen_samples,
-                        batch_size=batch_size,
-                    )
-                    for idx_batch in idx_batches
-                ]
-
+                results["guo"] = []
+                for idx_batch in tqdm(idx_batches):
+                    results["guo"].append(compute_sim_matrix(model, dataset,
+                                          np.array(keyids)[idx_batch],
+                                          gen_samples=gen_samples,
+                                          batch_size=batch_size,
+                                          progress=False))
                 # results_v2v["guo"] = [
                 #     get_motion_distances(
                 #         model,
