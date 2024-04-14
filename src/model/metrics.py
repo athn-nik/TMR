@@ -59,7 +59,8 @@ def all_contrastive_metrics_mot2mot(
         all_m[f"m2m/{key}"] = m2m_m[key]
  
     all_m["m2m/len"] = float(len(sims))
- 
+    if return_cols:
+        return all_m, m2m_cols
     return all_m
 
 def all_contrastive_metrics_text2mot(

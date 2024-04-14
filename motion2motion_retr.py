@@ -89,19 +89,20 @@ def compute_sim_matrix(model, dataset, keyids, gen_samples,
         batch_size = len(dataset)
     nsplit = int(np.ceil(len(dataset) / batch_size))
     returned = {}
-
+    keyids_ordered = {}
     with torch.no_grad():
 
         all_data = [dataset.load_keyid(keyid) for keyid in keyids]
         if nsplit > len(all_data):
             nsplit = len(all_data)
         all_data_splitted = np.array_split(all_data, nsplit)
-
         # by batch (can be too costly on cuda device otherwise)
         for sett in ['s_t', 't_t']:
             cur_samples = []
             latent_motions_A = []
             latent_motions_B = []
+            keys_ordered_for_run = []
+
             if progress:
                 data_iter = tqdm(all_data_splitted, leave=False)
             else:
@@ -110,6 +111,7 @@ def compute_sim_matrix(model, dataset, keyids, gen_samples,
                 # batch = collate_text_motion(data, device=device)
                 from src.data.collate import collate_tensor_with_padding, length_to_mask
                 cur_batch_keys = [x['keyid'] for x in data]
+                keys_ordered_for_run.extend(cur_batch_keys)
                 # TODO load the motions for the generations
                 # Text is already encoded
                 if sett == 's_t':
@@ -166,7 +168,8 @@ def compute_sim_matrix(model, dataset, keyids, gen_samples,
             latent_motions_B = torch.cat(latent_motions_B)
             sim_matrix = get_sim_matrix(latent_motions_A, latent_motions_B)
             returned[f'sim_matrix_{sett}'] = sim_matrix.cpu().numpy()
-    return returned
+            keyids_ordered[sett] = keys_ordered_for_run
+    return returned, keyids_ordered
 
 def get_motion_distances(model, dataset, keyids, gen_samples,
                          batch_size=256):
@@ -376,6 +379,7 @@ def retrieval(newcfg: DictConfig) -> None:
 
     datasets = {}
     results = {}
+    keyids_ord = {}
     bs_m2m = 32 # for the batch size metric
     if motion_gen_path is not None:
         curdir = Path(hydra.utils.get_original_cwd())
@@ -415,11 +419,12 @@ def retrieval(newcfg: DictConfig) -> None:
         # Compute sim_matrix for each protocol
         if protocol not in results:
             if protocol=="normal":
-                res = compute_sim_matrix(
+                res, keyids_ord_for_all = compute_sim_matrix(
                     model, dataset, dataset.keyids, 
                     gen_samples=gen_samples,
                     batch_size=batch_size,
                 )
+                keyids_ord['all'] = keyids_ord_for_all
                 results.update({key: res for key in ["normal"]})
                 # dists = get_motion_distances(
                 #     model, dataset, dataset.keyids, 
@@ -442,12 +447,15 @@ def retrieval(newcfg: DictConfig) -> None:
                 # split into batches of 32
                 # batched_keyids = [ [32], [32], [...]]
                 results["guo"] = []
+                keyids_ord["guo"] = []
                 for idx_batch in tqdm(idx_batches):
-                    results["guo"].append(compute_sim_matrix(model, dataset,
-                                          np.array(keyids)[idx_batch],
-                                          gen_samples=gen_samples,
-                                          batch_size=batch_size,
-                                          progress=False))
+                    res_matrs, res_keys = compute_sim_matrix(model, dataset,
+                                                             np.array(keyids)[idx_batch],
+                                                             gen_samples=gen_samples,
+                                                             batch_size=batch_size,
+                                                             progress=False)
+                    results["guo"].append(res_matrs)
+                    keyids_ord["guo"].append(res_keys)
                 # results_v2v["guo"] = [
                 #     get_motion_distances(
                 #         model,
@@ -466,31 +474,49 @@ def retrieval(newcfg: DictConfig) -> None:
             protocol_name = protocol
             def compute_guo_metrics(sim_matrix_lst):
                 all_metrics = []
+                all_cols = []
                 for sim_matrix in sim_matrix_lst:
-                    metrics = all_contrastive_metrics_mot2mot(sim_matrix,
-                                                      rounding=None)
+                    metrics, cols_for_metr = all_contrastive_metrics_mot2mot(sim_matrix,
+                                                      rounding=None,  return_cols=True)
                     all_metrics.append(metrics)
+                    all_cols.append(cols_for_metr)
 
                 avg_metrics = {}
                 for key in all_metrics[0].keys():
                     avg_metrics[key] = round(
                         float(np.mean([metrics[key] for metrics in all_metrics])), 2
                     )
-                return avg_metrics
+                return avg_metrics, all_cols
             metrics_dico = {}
             result_packed_to_d = {key: [d[key] for d in result]
                                   for key in result[0]
                                   }
+            keyids_ord['guo'] = {key: [d[key] for d in keyids_ord["guo"]]
+                        for key in keyids_ord["guo"][0]
+                        }
+
             str_for_tab = ''
             for var, lst_of_sim_matrs in result_packed_to_d.items():
                 logger.info(f'Case: {var} --> {mat2name[var]}')
                 metr_name = mat2name[var]
-                metrics_dico[metr_name] = compute_guo_metrics(lst_of_sim_matrs)
+                if var == 'sim_matrix_s_t':
+                    keyids_for_sel = keyids_ord['guo']['s_t']
+                else:
+                    keyids_for_sel = keyids_ord['guo']['t_t']
+
+                metrics_dico[metr_name], cols_for_metr_temp = compute_guo_metrics(lst_of_sim_matrs)
+
+                idxs_good = [np.where(el < 2)[0] for el in cols_for_metr_temp] 
+                cols_for_metr_unmerged = [list(np.array(for_sel_cur
+                                                         )[idxs]) for idxs, for_sel_cur in zip(idxs_good, keyids_for_sel)]
+                cols_for_metr[metr_name] = [item for sublist in cols_for_metr_unmerged for item in sublist]
                 str_for_tab += print_latex_metrics_m2m(metrics_dico[metr_name])
                 metric_name = f"{protocol_name}_{metr_name}.yaml"
                 path = os.path.join(save_dir, metric_name)
                 save_metric(path, metrics_dico[metr_name])
                 print(f"\n|-----------|\n")
+            cand_keyids_guo = cols_for_metr['target_generated']
+            write_json(cand_keyids_guo, Path(motion_gen_path) / 'guo_candkeyids.json')
             line_for_guo = str_for_tab.replace("\\\&", "&")
             print(f"\n|-----------||-----------||-----------||-----------|\n")
 
@@ -498,18 +524,29 @@ def retrieval(newcfg: DictConfig) -> None:
             protocol_name = protocol
             emb, threshold = None, None
             metrics = {}
+            cols_for_metr = {}
             str_for_tab = ''
             for var, sim_matrix in result.items():
                 logger.info(f'Case: {var} --> {mat2name[var]}')
                 metr_name = mat2name[var]
-                metrics[metr_name] = all_contrastive_metrics_mot2mot(sim_matrix, 
-                                                emb, threshold=threshold)
+                if var == 'sim_matrix_s_t':
+                    keyids_for_sel = keyids_ord['all']['s_t']
+                else:
+                    keyids_for_sel = keyids_ord['all']['t_t']
+
+                metrics[metr_name], cols_for_metr_temp = all_contrastive_metrics_mot2mot(sim_matrix, 
+                                                    emb, threshold=threshold, return_cols=True)
+                idxs_good = np.where(cols_for_metr_temp < 5)[0]
+                cols_for_metr[metr_name] = list(np.array(keyids_for_sel
+                                                         )[idxs_good])
                 str_for_tab += print_latex_metrics_m2m(metrics[metr_name])
 
                 metric_name = f"{protocol_name}_{metr_name}.yaml"
                 path = os.path.join(save_dir, metric_name)
                 save_metric(path, metrics[metr_name])
                 print(f"\n|-----------|\n")
+            cand_keyids_all = cols_for_metr['target_generated']
+            write_json(cand_keyids_all, Path(motion_gen_path) / 'all_candkeyids.json')
             line_for_all = str_for_tab.replace("\\\&", "&")
             print(f"\n|-----------||-----------||-----------||-----------|\n")
             # TODO do this at some point!
