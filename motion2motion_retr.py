@@ -516,7 +516,8 @@ def retrieval(newcfg: DictConfig) -> None:
                 save_metric(path, metrics_dico[metr_name])
                 print(f"\n|-----------|\n")
             cand_keyids_guo = cols_for_metr['target_generated']
-            write_json(cand_keyids_guo, Path(motion_gen_path) / 'guo_candkeyids.json')
+            if motion_gen_path is not None:
+                write_json(cand_keyids_guo, Path(motion_gen_path) / 'guo_candkeyids.json')
             line_for_guo = str_for_tab.replace("\\\&", "&")
             print(f"\n|-----------||-----------||-----------||-----------|\n")
 
@@ -546,7 +547,8 @@ def retrieval(newcfg: DictConfig) -> None:
                 save_metric(path, metrics[metr_name])
                 print(f"\n|-----------|\n")
             cand_keyids_all = cols_for_metr['target_generated']
-            write_json(cand_keyids_all, Path(motion_gen_path) / 'all_candkeyids.json')
+            if motion_gen_path is not None:
+                write_json(cand_keyids_all, Path(motion_gen_path) / 'all_candkeyids.json')
             line_for_all = str_for_tab.replace("\\\&", "&")
             print(f"\n|-----------||-----------||-----------||-----------|\n")
             # TODO do this at some point!
@@ -563,23 +565,27 @@ def retrieval(newcfg: DictConfig) -> None:
         logger.info(f"-----------")
     
     dict_batches = line2dict(line_for_guo)
+
     dict_full = line2dict(line_for_all)
     
     short_guo_line = shorten_metric_line(line_for_guo)
     short_all_line = shorten_metric_line(line_for_all)
-
-    write_json(dict_batches, Path(motion_gen_path) / 'batches_res.json')
-    write_json(dict_full, Path(motion_gen_path) / 'all_res.json')
-    with open(Path(motion_gen_path) / 'for_latex.txt', 'w') as f:
-        f.write(f'{line_for_all}\n')
-        f.write(f'{line_for_guo}\n')
-        f.write(f'=============Shorter Metrics=============\n')
-        f.write(f'{short_all_line}\n')
-        f.write(f'{short_guo_line}\n')
+    if motion_gen_path is not None:
+        write_json(dict_batches, Path(motion_gen_path) / 'batches_res.json')
+        write_json(dict_full, Path(motion_gen_path) / 'all_res.json')
+        with open(Path(motion_gen_path) / 'for_latex.txt', 'w') as f:
+            f.write(f'=============Full Metrics=============\n')
+            f.write(f'{line_for_all}\n')
+            f.write(f'{line_for_guo}\n')
+            f.write(f'=============Shorter Metrics=============\n')
+            f.write(f'{short_all_line}\n')
+            f.write(f'{short_guo_line}\n')
 
     print(f'----Experiment Folder----\n\n{short_expname}')
     print(f'----Batches of {bs_m2m}----\n\n{line_for_guo}')
     print(f'----Full Set----\n\n{line_for_all}')
+    print(f'----Batches of {bs_m2m}----\n\n{short_guo_line}')
+    print(f'----Full Set----\n\n{short_all_line}')
 
 if __name__ == "__main__":
     retrieval()

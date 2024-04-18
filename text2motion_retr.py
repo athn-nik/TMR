@@ -258,7 +258,8 @@ def retrieval(newcfg: DictConfig) -> None:
             metrics = all_contrastive_metrics_text2mot(sim_matrix, emb, threshold=threshold)
 
         print_latex_metrics_t2m(metrics)
-            # TODO do this at some point!
+        print_latex_metrics_t2m(metrics, short=True)
+        # TODO do this at some point!
             # run = wandb.init()
             # my_table = wandb.Table(columns=["a", "b"],
             #                        data=[["1a", "1b"], ["2a", "2b"]])

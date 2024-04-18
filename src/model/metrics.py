@@ -1,11 +1,17 @@
 import numpy as np
 
 
-def print_latex_metrics_t2m(metrics):
-    vals = [str(x).zfill(2) for x in [1, 2, 3, 5, 10]]
-
-    t2m_keys = [f"t2m/R{i}" for i in vals] + ["t2m/MedR"] + ["t2m/AvgR"]
-    m2t_keys = [f"m2t/R{i}" for i in vals] + ["m2t/MedR"] + ["m2t/AvgR"]
+def print_latex_metrics_t2m(metrics, short=False):
+    if short:
+        vals = [str(x).zfill(2) for x in [1, 2, 3]]
+    else:
+        vals = [str(x).zfill(2) for x in [1, 2, 3, 5, 10]]
+    if short:
+        t2m_keys = [f"t2m/R{i}" for i in vals] + ["t2m/AvgR"]
+        m2t_keys = [f"m2t/R{i}" for i in vals] + ["m2t/AvgR"]
+    else: 
+        t2m_keys = [f"t2m/R{i}" for i in vals] + ["t2m/MedR"] + ["t2m/AvgR"]
+        m2t_keys = [f"m2t/R{i}" for i in vals] + ["m2t/MedR"] + ["m2t/AvgR"]
 
     keys = t2m_keys + m2t_keys
 
