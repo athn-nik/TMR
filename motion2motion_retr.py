@@ -402,7 +402,7 @@ def retrieval(newcfg: DictConfig) -> None:
             if newcfg.dataset == 'sinc_synth':
                 dataset = SincSynthLoader()
             else:
-                dataset = MotionFixLoader()
+                dataset = MotionFixLoader(sets=['test'])
             # rms = ['002274', '002273', '002223', '002226', '002265', '002264']
             # for k in rms:
             #     dataset.motions.pop(k)
