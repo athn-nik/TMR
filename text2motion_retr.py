@@ -123,6 +123,17 @@ def compute_sim_matrix(model, dataset, keyids, gen_samples,
     }
     return returned
 
+def shorten_metric_line(line_to_shorten):
+    # Split the string into a list of numbers
+    numbers = line_to_shorten.split('&')
+
+    # Remove the elements at the 4th, 5th, 6th, 11th, 12th, and 13th indices
+    indices_to_remove = [4, 5, 6, 11, 12, 13]
+    for index in sorted(indices_to_remove, reverse=True):
+        del numbers[index]
+
+    # Join the list back into a string
+    return '&'.join(numbers)
 
 @hydra.main(version_base=None, config_path="configs", 
             config_name="text2mot_retrieval")
@@ -256,7 +267,11 @@ def retrieval(newcfg: DictConfig) -> None:
             protocol_name = protocol
             emb, threshold = None, None
             metrics = all_contrastive_metrics_text2mot(sim_matrix, emb, threshold=threshold)
-
+        #import ipdb;ipdb.set_trace()
+        if protocol == 'normal':
+            line_for_all = print_latex_metrics_t2m(metrics)
+        else:
+            line_for_guo = print_latex_metrics_t2m(metrics)
         print_latex_metrics_t2m(metrics)
         print_latex_metrics_t2m(metrics, short=True)
         # TODO do this at some point!
@@ -271,10 +286,16 @@ def retrieval(newcfg: DictConfig) -> None:
 
         logger.info(f"Testing done")
         logger.info(f"-----------")
-
+        
     print(f'----Experiment Folder----\n\n{short_expname}')
-    # print(f'----Batches of {bs_m2m}----\n\n{line_for_guo}')
-    # print(f'----Full Set----\n\n{line_for_all}')
+    
+    print('---------Full Metric-------')
+    print(f'----Batches of {bs_m2m}----\n\n{line_for_guo}')
+    print(f'----Full Set----\n\n{line_for_all}')
+
+    print('---------Short Metric-------')
+    print(f'----Batches of {bs_m2m}----\n\n{shorten_metric_line(line_for_guo)}')
+    print(f'----Full Set----\n\n{shorten_metric_line(line_for_all)}')
 
 if __name__ == "__main__":
     retrieval()

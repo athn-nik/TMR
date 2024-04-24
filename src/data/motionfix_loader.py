@@ -25,7 +25,7 @@ class MotionFixLoader(Dataset):
                  datapath: str = "",
                  smplh_path: str = "",
                  rot_repr: str = "6d",
-                 sets: List[str] = ['test']
+                 sets: List[str] = ['test'],
                  **kwargs):
         # v11 is the next one 
         self.datapath = 'datasets/bodilex/amass_bodilex_v11.pth.tar'
@@ -79,6 +79,7 @@ class MotionFixLoader(Dataset):
         data_ids = list(data_dict.keys())
         from src.data.utils import read_json
         splits = read_json(f'{os.path.dirname(Path(curdir / self.datapath))}/splits.json')
+        test_ids = []
         for ss in sets:
             test_ids += splits[ss]
         self.motions = {}
