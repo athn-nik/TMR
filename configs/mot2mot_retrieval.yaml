@@ -12,6 +12,7 @@ protocol: #  (is all 4), normal (a), threshold (b), nsim (c), guo (d)
 threshold: 0.95 # threashold to compute (b)
 samples_path: null
 dataset: 'sinc_synth' # motionfix
+sets: test # val all
 
 ckpt: last
 batch_size: 256

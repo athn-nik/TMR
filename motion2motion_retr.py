@@ -393,6 +393,16 @@ def retrieval(newcfg: DictConfig) -> None:
         gen_samples = None
         gen_samples_raw = None
 
+    if newcfg.sets == 'all':
+        sets_to_load = ['val', 'test']
+        extra_str = '_val_test'
+    elif newcfg.sets == 'val':
+        sets_to_load = ['val']
+        extra_str = '_val'
+    else:
+        sets_to_load = ['test']
+        extra_str = ''
+
     for protocol in protocols:
         logger.info(f"|------Protocol {protocol.upper()}-----|")
         # Load the dataset if not already
@@ -402,7 +412,7 @@ def retrieval(newcfg: DictConfig) -> None:
             if newcfg.dataset == 'sinc_synth':
                 dataset = SincSynthLoader()
             else:
-                dataset = MotionFixLoader(sets=['test'])
+                dataset = MotionFixLoader(sets=sets_to_load)
             # rms = ['002274', '002273', '002223', '002226', '002265', '002264']
             # for k in rms:
             #     dataset.motions.pop(k)
@@ -517,7 +527,7 @@ def retrieval(newcfg: DictConfig) -> None:
                 print(f"\n|-----------|\n")
             cand_keyids_guo = cols_for_metr['target_generated']
             if motion_gen_path is not None:
-                write_json(cand_keyids_guo, Path(motion_gen_path) / 'guo_candkeyids.json')
+                write_json(cand_keyids_guo, Path(motion_gen_path) / f'guo_candkeyids{extra_str}.json')
             line_for_guo = str_for_tab.replace("\\\&", "&")
             print(f"\n|-----------||-----------||-----------||-----------|\n")
 
@@ -548,7 +558,7 @@ def retrieval(newcfg: DictConfig) -> None:
                 print(f"\n|-----------|\n")
             cand_keyids_all = cols_for_metr['target_generated']
             if motion_gen_path is not None:
-                write_json(cand_keyids_all, Path(motion_gen_path) / 'all_candkeyids.json')
+                write_json(cand_keyids_all, Path(motion_gen_path) / f'all_candkeyids{extra_str}.json')
             line_for_all = str_for_tab.replace("\\\&", "&")
             print(f"\n|-----------||-----------||-----------||-----------|\n")
             # TODO do this at some point!
@@ -571,9 +581,9 @@ def retrieval(newcfg: DictConfig) -> None:
     short_guo_line = shorten_metric_line(line_for_guo)
     short_all_line = shorten_metric_line(line_for_all)
     if motion_gen_path is not None:
-        write_json(dict_batches, Path(motion_gen_path) / 'batches_res.json')
-        write_json(dict_full, Path(motion_gen_path) / 'all_res.json')
-        with open(Path(motion_gen_path) / 'for_latex.txt', 'w') as f:
+        write_json(dict_batches, Path(motion_gen_path) / f'batches_res{extra_str}.json')
+        write_json(dict_full, Path(motion_gen_path) / f'all_res{extra_str}.json')
+        with open(Path(motion_gen_path) / f'for_latex{extra_str}.txt', 'w') as f:
             f.write(f'=============Full Metrics=============\n')
             f.write(f'{line_for_all}\n')
             f.write(f'{line_for_guo}\n')

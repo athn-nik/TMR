@@ -104,8 +104,14 @@ def main(path_samples, metric):
     plot_2d_3d_plot(g_tnm, g_m, t2t_bt,
                     '$g_{text}^{motion}$', '$g^{motion}$',
                     metric=metric,
-                    name=extra_name,
+                    name='gen2target',
                     invert_size=order)
+    plot_2d_3d_plot(g_tnm, g_m, s2t_bt,
+                    '$g_{text}^{motion}$', '$g^{motion}$',
+                    metric=metric,
+                    name='source2target',
+                    invert_size=order)
+
 
 if __name__ == '__main__':
     import argparse
