@@ -61,7 +61,7 @@ def get_gpus(min_mem=32000, arch=('volta', 'quadro', 'rtx', 'nvidia')):
 
 def launch_task_on_cluster(configs: List[Dict[str, str]],
                            num_exp: int = 1, mode: str = 'train',
-                           bid_amount: int = 10, num_workers: int = 32,
+                           bid_amount: int = 200, num_workers: int = 32,
                            memory: int = 128000, gpu_min_mem:int = 32000,
                            gpu_arch: Optional[List[Tuple[str, ...]]] = 
                            ('volta', 'quadro', 'rtx', 'nvidia')) -> None:
@@ -109,8 +109,8 @@ def launch_task_on_cluster(configs: List[Dict[str, str]],
             f.write(sub_file)
 
         # logger.info('The cluster logs for this experiments can be found under:'\
-                    f'{str(logdir_condor)}')
-        
+        #            f'{str(logdir_condor)}')
+        print(bid_amount) 
         cmd = ['condor_submit_bid', f'{bid_amount}', str(submission_path)]
         # logger.info('Executing ' + ' '.join(cmd))
         subprocess.run(cmd)
@@ -120,7 +120,7 @@ if __name__ == "__main__":
     parser.add_argument('--extras', required=False, default='', type=str, help='args hydra')
     parser.add_argument('--gpus', required=False, default=1, type=int,
                         help='No of GPUS to use')
-    parser.add_argument('--bid', required=False, default=25, type=int,
+    parser.add_argument('--bid', required=False, default=2000, type=int,
                         help='bid money for cluster')
     arguments = parser.parse_args()
 
@@ -138,5 +138,5 @@ if __name__ == "__main__":
         args = ''
     experiments = [{"args": args,
                     "gpus": gpus_no}]
-    
+
     launch_task_on_cluster(experiments, bid_amount=bid_for_exp)

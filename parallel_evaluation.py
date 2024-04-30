@@ -3,6 +3,8 @@ import time
 import subprocess
 import argparse
 import os
+from tqdm import tqdm
+
 
 def run(cmd):
     # print(f"---------Executing-----------\n {' '.join(cmd)}")
@@ -59,7 +61,7 @@ if __name__ == "__main__":
     assert dataset in ['bodilex', 'sinc_synth', 'hml3d']
     parser = argparse.ArgumentParser()
     cmd_eval = ['python', 'evaluate_cluster.py',
-                 '--bid', '20',
+                 '--bid', '2000',
                  '--extras', extras_args]
     
     main_loop(cmd_eval, samples_dirs_list,
