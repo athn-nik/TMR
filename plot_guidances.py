@@ -16,7 +16,7 @@ def get_metrs_n_guids(subpath, metr):
     path_for_exps = subpath
     loxps=[ f.path for f in os.scandir(path_for_exps) if f.is_dir()]
     expname = '__'.join(path_for_exps.split('/')[-3:-1])
-    print('=========={expname}=========')
+    print(f'=========={expname}=========')
 
     guidance_tnm = []
     guidance_m = []
@@ -24,21 +24,27 @@ def get_metrs_n_guids(subpath, metr):
     t2t_avgr_batch = []
     s2t_avgr_all = []
     t2t_avgr_all = []
-
+    not_found = 0
+    not_found_paths = []
     for x in tqdm(loxps):
         gd_comb = x.split('/')[-1]
         numbers = re.findall(r'\d+\.\d+', gd_comb)
-        print(numbers)
         guidance_tnm.append(float(numbers[0]))
         guidance_m.append(float(numbers[1]))
-
-        data_batch=load_json(x+'/batches_res.json')
-        data_all=load_json(x+'/all_res.json')
+        try:
+            data_batch=load_json(x+'/batches_res.json')
+            data_all=load_json(x+'/all_res.json')
+        except:
+            not_found += 1
+            not_found_paths.append(x)
+            continue
         s2t_avgr_batch.append(float(data_batch[f'{metr}_s2t']))
         t2t_avgr_batch.append(float(data_batch[f'{metr}']))
         s2t_avgr_all.append(float(data_all[f'{metr}_s2t']))
         t2t_avgr_all.append(float(data_all[f'{metr}']))
-        print('---')
+    print(f'Number of paths of not found: {not_found}')
+    if not_found > 0:
+        print(f'List of paths that are not found\n{not_found_paths}')
     return guidance_tnm, guidance_m, s2t_avgr_batch, t2t_avgr_batch, s2t_avgr_all, t2t_avgr_all
 
 
@@ -59,7 +65,8 @@ def plot_2d_3d_plot(x, y, z, xname, yname,
     colors = plt.cm.cividis(z_normalized)
     # Plot each point with an area proportional to z value
     scatter = ax.scatter(x, y, s=z_area, c=colors, alpha=0.8,
-                         norm=norm, marker='o',
+                        #  norm=norm,
+                         marker='o',
                          edgecolor='k', linewidth=0.5)  # Use 'o' as the marker for circles
     # Annotate each circle with its z value
     for i, txt in enumerate(z):
