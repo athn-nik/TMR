@@ -5,8 +5,8 @@ import argparse
 import os
 
 def run(cmd):
-    print(f"---------Executing-----------\n {' '.join(cmd)}")
-    #import ipdb; ipdb.set_trace()
+    # print(f"---------Executing-----------\n {' '.join(cmd)}")
+    # import ipdb; ipdb.set_trace()
 
     x = subprocess.run(cmd)
 
@@ -19,7 +19,7 @@ def main_loop(command, exp_paths, data):
     print("Number of different experiments is:", len(paths_to_eval))
     print('---------------------------------------------------')
 
-    for fd in paths_to_eval:
+    for fd in tqdm(paths_to_eval):
         cur_cmd = list(cmd_eval)
         idx_of_exp = cur_cmd.index("samples_path=FOLDER")
         cur_cmd[idx_of_exp] = f"samples_path={str(fd)} dataset={data}"
