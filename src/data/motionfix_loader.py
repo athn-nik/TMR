@@ -84,7 +84,8 @@ class MotionFixLoader(Dataset):
             test_ids += splits[ss]
         self.motions = {}
         for test_id in test_ids:
-            self.motions[test_id] = data_dict[test_id]
+            if test_id in data_dict:
+                self.motions[test_id] = data_dict[test_id]
         self.keyids = list(self.motions.keys())
 
     def __len__(self):
