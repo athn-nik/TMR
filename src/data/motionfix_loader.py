@@ -35,6 +35,7 @@ class MotionFixLoader(Dataset):
         self.smpl_p = Path(curdir / 'datasets/body_models')
         # calculate splits
         self.normalizer = Normalizer(curdir/'stats/humanml3d/amass_feats')
+        from src.prepare import get_local_debug
 
         self.body_model = smplx.SMPLHLayer(f'{self.smpl_p}/smplh',
                                            model_type='smplh',
@@ -42,7 +43,10 @@ class MotionFixLoader(Dataset):
                                            ext='npz').eval();
         setattr(smplx.SMPLHLayer, 'smpl_forward_fast', smpl_forward_fast)
         freeze(self.body_model)
-        ds_db_path = Path(curdir / self.datapath)
+        if get_local_debug():
+            ds_db_path = Path('/home/nathanasiou/Desktop/local-dedug/data/amass_bodilex_v11.pth.tar')
+        else:
+            ds_db_path = Path(curdir / self.datapath)
 
         dataset_dict_raw = joblib.load(ds_db_path)
         dataset_dict_raw = cast_dict_to_tensors(dataset_dict_raw)
