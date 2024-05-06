@@ -1,4 +1,4 @@
-import os 
+import os
 from src.data.text import load_json
 import re
 from tqdm import tqdm
@@ -11,13 +11,16 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 BASE_PATH = 'experiments/clean-motionfix' 
 
-def get_metrs_n_guids(subpath, metr):
+def get_metrs_n_guids(subpath, metr, set_to_eval='test'):
     # path_for_exps = f'{BASE_PATH}/{subpath}'
     path_for_exps = subpath
     loxps=[ f.path for f in os.scandir(path_for_exps) if f.is_dir()]
     expname = '__'.join(path_for_exps.split('/')[-3:-1])
     print(f'=========={expname}=========')
-
+    if set_to_eval == 'test':
+        set_str = ''
+    else:
+        set_str = '_val'
     guidance_tnm = []
     guidance_m = []
     s2t_avgr_batch = []
@@ -32,8 +35,8 @@ def get_metrs_n_guids(subpath, metr):
         guidance_tnm.append(float(numbers[0]))
         guidance_m.append(float(numbers[1]))
         try:
-            data_batch=load_json(x+'/batches_res.json')
-            data_all=load_json(x+'/all_res.json')
+            data_batch=load_json(x+f'/batches_res{set_str}.json')
+            data_all=load_json(x+f'/all_res{set_str}.json')
         except:
             not_found += 1
             not_found_paths.append(x)
@@ -72,13 +75,14 @@ def plot_2d_3d_plot(x, y, z, xname, yname,
     for i, txt in enumerate(z):
         ax.annotate(txt, (x[i], y[i]), textcoords="offset points", 
                     xytext=(0,15), ha='center')
-    ax.set_xlabel(xname)
-    ax.set_ylabel(yname)
-    ax.set_title(f'Plot of guidances and {metric}')
+    ax.set_xlabel(xname, fontsize=20)
+    ax.set_ylabel(yname,fontsize=20)
+    ax.set_title(f'\n\nExp : {name.upper()}', 
+                 fontsize=14, fontweight='bold', pad=20)
     # cbar = plt.colorbar(scatter, ax=ax)
     cbar = plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap='cividis'), ax=ax)
     
-    cbar.set_label(f'{metric}')
+    cbar.set_label(f'{metric}',fontsize=20)
     # Set the ticks of the colorbar to match the original z values
     # tick_positions = np.linspace(0, 1, 5)
     # tick_labels = np.linspace(min(z), max(z), 5)
@@ -95,12 +99,22 @@ def plot_2d_3d_plot(x, y, z, xname, yname,
     y_margin = 0.2    # Additional y margin
     ax.set_xlim(min(x) - x_margin, max(x) + x_margin)
     ax.set_ylim(min(y) - y_margin, max(y) + y_margin)
-    plt.savefig(f'./{metric}{name}.png')
-    plt.savefig(f'./{metric}{name}.pdf')
+    plt.savefig(f'./{metric}_{name}.png')
+    plt.savefig(f'./{metric}_{name}.pdf')
 
-def main(path_samples, metric):
+def main(path_samples, metric, set_for_eval):
     g_tnm, g_m,  s2t_bt, t2t_bt, s2t_all, t2t_all = get_metrs_n_guids(path_samples, 
-                                                                      metr=metric)
+                                                                      metr=metric,
+                                                                      set_to_eval=set_for_eval)
+    # inds = [idx for idx, (a,b) in enumerate(zip(g_m, g_tnm)) if a<4 and b<4]
+    # g_m = [el for ii, el in enumerate(g_m) if ii in inds]
+    # g_tnm = [el for ii, el in enumerate(g_tnm) if ii in inds]
+    # s2t_bt = [el for ii, el in enumerate(s2t_bt) if ii in inds]
+    # t2t_bt = [el for ii, el in enumerate(t2t_bt) if ii in inds]
+    # import ipdb; ipdb.set_trace()
+    exp_alias = '__'.join(path_samples.split('/')[-3:-1])
+
+    # import ipdb;ipdb.set_trace()
     extra_name = ''
     if metric in ['AvgR', 'MedR']:
         higher_is_better = False # eg R@1
@@ -111,12 +125,12 @@ def main(path_samples, metric):
     plot_2d_3d_plot(g_tnm, g_m, t2t_bt,
                     '$g_{text}^{motion}$', '$g^{motion}$',
                     metric=metric,
-                    name='gen2target',
+                    name=f'G2T-{set_for_eval}-{exp_alias}',
                     invert_size=order)
     plot_2d_3d_plot(g_tnm, g_m, s2t_bt,
                     '$g_{text}^{motion}$', '$g^{motion}$',
                     metric=metric,
-                    name='source2target',
+                    name=f'S2G-{set_for_eval}-{exp_alias}',
                     invert_size=order)
 
 
@@ -129,7 +143,9 @@ if __name__ == '__main__':
     # Add the arguments
     parser.add_argument('-p', '--path', type=str, help='The path to process')
     parser.add_argument('-m', '--metric', type=str, help='The string to process')
-
+    parser.add_argument('--set',required=False,
+                        default='test',
+                        type=str, help='The string to process')
     # Parse the arguments
     args = parser.parse_args()
 
@@ -139,4 +155,5 @@ if __name__ == '__main__':
     # metric = 'R@1'
     metric_name = args.metric
     path_to_samples = args.path
-    main(path_to_samples, metric_name)
+    set_for_eval = args.set
+    main(path_to_samples, metric_name, set_for_eval=set_for_eval)
