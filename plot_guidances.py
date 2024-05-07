@@ -14,6 +14,7 @@ BASE_PATH = 'experiments/clean-motionfix'
 def get_metrs_n_guids(subpath, metr, set_to_eval='test'):
     # path_for_exps = f'{BASE_PATH}/{subpath}'
     path_for_exps = subpath
+    # import ipdb; ipdb.set_trace()
     loxps=[ f.path for f in os.scandir(path_for_exps) if f.is_dir()]
     expname = '__'.join(path_for_exps.split('/')[-3:-1])
     print(f'=========={expname}=========')
@@ -32,8 +33,6 @@ def get_metrs_n_guids(subpath, metr, set_to_eval='test'):
     for x in tqdm(loxps):
         gd_comb = x.split('/')[-1]
         numbers = re.findall(r'\d+\.\d+', gd_comb)
-        guidance_tnm.append(float(numbers[0]))
-        guidance_m.append(float(numbers[1]))
         try:
             data_batch=load_json(x+f'/batches_res{set_str}.json')
             data_all=load_json(x+f'/all_res{set_str}.json')
@@ -41,6 +40,8 @@ def get_metrs_n_guids(subpath, metr, set_to_eval='test'):
             not_found += 1
             not_found_paths.append(x)
             continue
+        guidance_tnm.append(float(numbers[0]))
+        guidance_m.append(float(numbers[1]))
         s2t_avgr_batch.append(float(data_batch[f'{metr}_s2t']))
         t2t_avgr_batch.append(float(data_batch[f'{metr}']))
         s2t_avgr_all.append(float(data_all[f'{metr}_s2t']))
@@ -67,6 +68,7 @@ def plot_2d_3d_plot(x, y, z, xname, yname,
     
     colors = plt.cm.cividis(z_normalized)
     # Plot each point with an area proportional to z value
+    # import ipdb;ipdb.set_trace()
     scatter = ax.scatter(x, y, s=z_area, c=colors, alpha=0.8,
                         #  norm=norm,
                          marker='o',
@@ -77,8 +79,10 @@ def plot_2d_3d_plot(x, y, z, xname, yname,
                     xytext=(0,15), ha='center')
     ax.set_xlabel(xname, fontsize=20)
     ax.set_ylabel(yname,fontsize=20)
-    ax.set_title(f'\n\nExp : {name.upper()}', 
-                 fontsize=14, fontweight='bold', pad=20)
+    title_name = name.split('__')
+    title_name = '\n'.join(title_name)
+    ax.set_title(f'info: {title_name}', 
+                 fontsize=11,  pad=20)
     # cbar = plt.colorbar(scatter, ax=ax)
     cbar = plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap='cividis'), ax=ax)
     
@@ -99,8 +103,9 @@ def plot_2d_3d_plot(x, y, z, xname, yname,
     y_margin = 0.2    # Additional y margin
     ax.set_xlim(min(x) - x_margin, max(x) + x_margin)
     ax.set_ylim(min(y) - y_margin, max(y) + y_margin)
-    plt.savefig(f'./{metric}_{name}.png')
-    plt.savefig(f'./{metric}_{name}.pdf')
+    print(f'saved in : guid_grids/{metric}_{name}.png')
+    plt.savefig(f'./guid_grids/{metric}_{name}.png')
+    # plt.savefig(f'./{metric}_{name}.pdf')
 
 def main(path_samples, metric, set_for_eval):
     g_tnm, g_m,  s2t_bt, t2t_bt, s2t_all, t2t_all = get_metrs_n_guids(path_samples, 
@@ -112,8 +117,9 @@ def main(path_samples, metric, set_for_eval):
     # s2t_bt = [el for ii, el in enumerate(s2t_bt) if ii in inds]
     # t2t_bt = [el for ii, el in enumerate(t2t_bt) if ii in inds]
     # import ipdb; ipdb.set_trace()
+    path_samples = path_samples.rstrip('/')
     exp_alias = '__'.join(path_samples.split('/')[-3:-1])
-
+    samples_name = path_samples.split('/')[-1]
     # import ipdb;ipdb.set_trace()
     extra_name = ''
     if metric in ['AvgR', 'MedR']:
@@ -125,12 +131,12 @@ def main(path_samples, metric, set_for_eval):
     plot_2d_3d_plot(g_tnm, g_m, t2t_bt,
                     '$g_{text}^{motion}$', '$g^{motion}$',
                     metric=metric,
-                    name=f'G2T-{set_for_eval}-{exp_alias}',
+                    name=f'G2T-{set_for_eval}__{samples_name}__{exp_alias}',
                     invert_size=order)
     plot_2d_3d_plot(g_tnm, g_m, s2t_bt,
                     '$g_{text}^{motion}$', '$g^{motion}$',
                     metric=metric,
-                    name=f'S2G-{set_for_eval}-{exp_alias}',
+                    name=f'S2G-{set_for_eval}__{samples_name}__{exp_alias}',
                     invert_size=order)
 
 

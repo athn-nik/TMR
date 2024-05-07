@@ -118,8 +118,9 @@ def compute_sim_matrix(model, dataset, keyids, gen_samples,
                     motion_a = collate_tensor_with_padding(
                         [x['motion_source'] for x in data]).to(model.device)
                     lengths_a = [len(x['motion_source']) for x in data]
+                    lengths_tgt = [len(x['motion_target']) for x in data]
                     if gen_samples:
-                        cur_samples = [gen_samples[key_in_batch] for key_in_batch in cur_batch_keys]
+                        cur_samples = [gen_samples[key_in_batch][:lengths_tgt[ix]] for ix, key_in_batch in enumerate(cur_batch_keys)]
                         lengths_b = [len(x) for x in cur_samples]
                         motion_b = collate_tensor_with_padding(
                             cur_samples).to(model.device)
@@ -138,8 +139,10 @@ def compute_sim_matrix(model, dataset, keyids, gen_samples,
                     motion_a = collate_tensor_with_padding(
                         [x['motion_target'] for x in data]).to(model.device)
                     lengths_a = [len(x['motion_target']) for x in data]
+                    lengths_tgt = [len(x['motion_target']) for x in data]
+
                     if gen_samples:
-                        cur_samples = [gen_samples[key_in_batch] for key_in_batch in cur_batch_keys]
+                        cur_samples = [gen_samples[key_in_batch][:lengths_tgt[ix]] for ix, key_in_batch in enumerate(cur_batch_keys)]
                         lengths_b = [len(x) for x in cur_samples]
                         motion_b = collate_tensor_with_padding(cur_samples
                                                                ).to(model.device)

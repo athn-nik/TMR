@@ -44,7 +44,7 @@ class MotionFixLoader(Dataset):
         setattr(smplx.SMPLHLayer, 'smpl_forward_fast', smpl_forward_fast)
         freeze(self.body_model)
         if get_local_debug():
-            ds_db_path = Path('/home/nathanasiou/Desktop/local-dedug/data/amass_bodilex_v11.pth.tar')
+            ds_db_path = Path('/home/nathanasiou/Desktop/local-debug/data/amass_bodilex_v11.pth.tar')
         else:
             ds_db_path = Path(curdir / self.datapath)
 
