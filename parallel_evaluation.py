@@ -12,8 +12,13 @@ def run(cmd):
 
     x = subprocess.run(cmd)
 
-def main_loop(command, exp_paths, data):
-
+def main_loop(command, exp_paths, data, subsets_for_eval):
+    if subsets_for_eval == 'test':
+        sets_arg = 'sets=test'
+    elif subsets_for_eval == 'all':
+        sets_arg = 'sets=all'
+    else:
+        sets_arg = 'sets=val'
     cmd_no=0
     cmd_eval = command
     from itertools import product
@@ -24,7 +29,8 @@ def main_loop(command, exp_paths, data):
     for fd in tqdm(paths_to_eval):
         cur_cmd = list(cmd_eval)
         idx_of_exp = cur_cmd.index("samples_path=FOLDER")
-        cur_cmd[idx_of_exp] = f"samples_path={str(fd)} dataset={data}"
+        cur_cmd[idx_of_exp] = f"samples_path={str(fd)} dataset={data} {sets_arg}"
+        # import ipdb;ipdb.set_trace()
         # list_of_args = ' '.join([f'data={data}"'])
         # cur_cmd.extend([list_of_args])
         # `print(cur_cmd)
@@ -39,6 +45,8 @@ if __name__ == "__main__":
 
     parser.add_argument('--ds', required=True, type=str,
                         help='dataset')
+    parser.add_argument('--set', required=False, default='test', choices=["all", "val", "test"], help="Subset for metrics..")
+
     parser.add_argument('--bid', required=False, default=30, type=int,
                         help='bid money for cluster')
     parser.add_argument('--extras', required=False, default='', type=str, help='args hydra')
@@ -47,6 +55,7 @@ if __name__ == "__main__":
     bid_for_exp = args.bid
     dataset = args.ds
     extras_args = args.extras
+    subset_to_eval = args.set
     start_index = extras_args.find("samples_path=") + len("samples_path=")
     end_index = extras_args.find(" ", start_index)
     if end_index == -1:  # In case there is no space after the target substring
@@ -65,5 +74,5 @@ if __name__ == "__main__":
                  '--extras', extras_args]
     
     main_loop(cmd_eval, samples_dirs_list,
-              dataset)
+              dataset, subset_to_eval)
     # python evaluate_cluster.py --extras "run_dir=outputs/tmr_humanml3d_amass_feats dataset='bodilex' samples_path=experiments/clean-motionfix/bodilex/bs64_1000ts_clip77/steps_1000_bodilex_noise_999/ld_txt-2.5_ld_mot-2.5"
