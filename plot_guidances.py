@@ -79,7 +79,7 @@ def plot_2d_3d_plot(x, y, z, xname, yname,
                     xytext=(0,15), ha='center')
     ax.set_xlabel(xname, fontsize=20)
     ax.set_ylabel(yname,fontsize=20)
-    title_name = name.split('__')
+    title_name = name.split('|')
     title_name = '\n'.join(title_name)
     ax.set_title(f'info: {title_name}', 
                  fontsize=11,  pad=20)
@@ -103,8 +103,8 @@ def plot_2d_3d_plot(x, y, z, xname, yname,
     y_margin = 0.2    # Additional y margin
     ax.set_xlim(min(x) - x_margin, max(x) + x_margin)
     ax.set_ylim(min(y) - y_margin, max(y) + y_margin)
-    print(f'saved in : guid_grids/{metric}_{name}.png')
-    plt.savefig(f'./guid_grids/{metric}_{name}.png')
+    print(f"saved in : guid_grids/{metric}{name.split('-')[0]}.png")
+    plt.savefig(f"./guid_grids/{metric}{name.split('-')[0]}.png")
     # plt.savefig(f'./{metric}_{name}.pdf')
 
 def main(path_samples, metric, set_for_eval):
@@ -131,12 +131,12 @@ def main(path_samples, metric, set_for_eval):
     plot_2d_3d_plot(g_tnm, g_m, t2t_bt,
                     '$g_{text}^{motion}$', '$g^{motion}$',
                     metric=metric,
-                    name=f'G2T-{set_for_eval}__{samples_name}__{exp_alias}',
+                    name=f'Gen2Target-{set_for_eval}|{samples_name}|{exp_alias}',
                     invert_size=order)
     plot_2d_3d_plot(g_tnm, g_m, s2t_bt,
                     '$g_{text}^{motion}$', '$g^{motion}$',
                     metric=metric,
-                    name=f'S2G-{set_for_eval}__{samples_name}__{exp_alias}',
+                    name=f'Source2Gen-{set_for_eval}__{samples_name}__{exp_alias}',
                     invert_size=order)
 
 

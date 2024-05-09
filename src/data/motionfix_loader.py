@@ -67,17 +67,17 @@ class MotionFixLoader(Dataset):
                 dataset_dict_raw[k][mtype]['rots'] = rots_can
                 dataset_dict_raw[k][mtype]['trans'] = trans_can
                 seqlen, jts_no = rots_can.shape[:2]
-                
-                rots_can_rotm = transform_body_pose(rots_can,
-                                                  'aa->rot')
-                # self.body_model.batch_size = seqlen * jts_no
+                # NO need for this for now
+                # rots_can_rotm = transform_body_pose(rots_can,
+                #                                   'aa->rot')
+                # # self.body_model.batch_size = seqlen * jts_no
 
-                jts_can_ds = self.body_model.smpl_forward_fast(transl=trans_can,
-                                                 body_pose=rots_can_rotm[:, 1:],
-                                             global_orient=rots_can_rotm[:, :1])
+                # jts_can_ds = self.body_model.smpl_forward_fast(transl=trans_can,
+                #                                  body_pose=rots_can_rotm[:, 1:],
+                #                              global_orient=rots_can_rotm[:, :1])
 
-                jts_can = jts_can_ds.joints[:, :22]
-                dataset_dict_raw[k][mtype]['joint_positions'] = jts_can
+                # jts_can = jts_can_ds.joints[:, :22]
+                # dataset_dict_raw[k][mtype]['joint_positions'] = jts_can
 
         data_dict = cast_dict_to_tensors(dataset_dict_raw)
         data_ids = list(data_dict.keys())
