@@ -47,6 +47,7 @@ def get_metrs_n_guids(subpath, metr, set_to_eval='test'):
         s2t_avgr_all.append(float(data_all[f'{metr}_s2t']))
         t2t_avgr_all.append(float(data_all[f'{metr}']))
     print(f'Number of paths of not found: {not_found}')
+    # import ipdb;ipdb.set_trace()
     if not_found > 0:
         print(f'List of paths that are not found\n{not_found_paths}')
     return guidance_tnm, guidance_m, s2t_avgr_batch, t2t_avgr_batch, s2t_avgr_all, t2t_avgr_all
