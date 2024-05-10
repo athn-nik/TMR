@@ -427,6 +427,9 @@ def retrieval(newcfg: DictConfig) -> None:
             )
         if gen_samples is not None:
             gen_samples = {k:v for k, v in gen_samples.items() if k in dataset.motions.keys()}
+        else:
+            if motion_gen_path is not None:
+                exit('Expected samples to be provided in the path.')
         dataset = datasets[protocol]
 
         # Compute sim_matrix for each protocol
