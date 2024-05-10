@@ -28,7 +28,7 @@ class MotionFixLoader(Dataset):
                  sets: List[str] = ['test'],
                  **kwargs):
         # v11 is the next one 
-        self.datapath = 'datasets/bodilex/amass_bodilex_v11.pth.tar'
+        self.datapath = 'datasets/bodilex/amass_bodilex_v13.pth.tar'
         self.collate_fn = lambda b: collate_batch_last_padding(b, load_feats)
         self.rot_repr = rot_repr
         curdir = Path(hydra.utils.get_original_cwd())
@@ -44,7 +44,7 @@ class MotionFixLoader(Dataset):
         setattr(smplx.SMPLHLayer, 'smpl_forward_fast', smpl_forward_fast)
         freeze(self.body_model)
         if get_local_debug():
-            ds_db_path = Path('/home/nathanasiou/Desktop/local-debug/data/amass_bodilex_v11.pth.tar')
+            ds_db_path = Path('/home/nathanasiou/Desktop/local-debug/data/amass_bodilex_v13.pth.tar')
         else:
             ds_db_path = Path(curdir / self.datapath)
 
