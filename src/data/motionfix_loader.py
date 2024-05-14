@@ -37,49 +37,49 @@ class MotionFixLoader(Dataset):
         self.normalizer = Normalizer(curdir/'stats/humanml3d/amass_feats')
         from src.prepare import get_local_debug
 
-        self.body_model = smplx.SMPLHLayer(f'{self.smpl_p}/smplh',
-                                           model_type='smplh',
-                                           gender='neutral',
-                                           ext='npz').eval();
-        setattr(smplx.SMPLHLayer, 'smpl_forward_fast', smpl_forward_fast)
-        freeze(self.body_model)
+        # self.body_model = smplx.SMPLHLayer(f'{self.smpl_p}/smplh',
+        #                                    model_type='smplh',
+        #                                    gender='neutral',
+        #                                    ext='npz').eval();
+        # setattr(smplx.SMPLHLayer, 'smpl_forward_fast', smpl_forward_fast)
+        # freeze(self.body_model)
         if get_local_debug():
             ds_db_path = Path('/home/nathanasiou/Desktop/local-debug/data/amass_bodilex_v13.pth.tar')
         else:
             ds_db_path = Path(curdir / self.datapath)
 
         dataset_dict_raw = joblib.load(ds_db_path)
-        dataset_dict_raw = cast_dict_to_tensors(dataset_dict_raw)
-        for k, v in dataset_dict_raw.items():
+        # dataset_dict_raw = cast_dict_to_tensors(dataset_dict_raw)
+        # for k, v in dataset_dict_raw.items():
             
-            if len(v['motion_source']['rots'].shape) > 2:
-                rots_flat_src = v['motion_source']['rots'].flatten(-2).float()
-                dataset_dict_raw[k]['motion_source']['rots'] = rots_flat_src
-            if len(v['motion_target']['rots'].shape) > 2:
-                rots_flat_tgt = v['motion_target']['rots'].flatten(-2).float()
-                dataset_dict_raw[k]['motion_target']['rots'] = rots_flat_tgt
+        #     if len(v['motion_source']['rots'].shape) > 2:
+        #         rots_flat_src = v['motion_source']['rots'].flatten(-2).float()
+        #         dataset_dict_raw[k]['motion_source']['rots'] = rots_flat_src
+        #     if len(v['motion_target']['rots'].shape) > 2:
+        #         rots_flat_tgt = v['motion_target']['rots'].flatten(-2).float()
+        #         dataset_dict_raw[k]['motion_target']['rots'] = rots_flat_tgt
 
-            for mtype in ['motion_source', 'motion_target']:
+        #     for mtype in ['motion_source', 'motion_target']:
             
-                rots_can, trans_can = self._canonica_facefront(v[mtype]['rots'],
-                                                               v[mtype]['trans']
-                                                               )
-                dataset_dict_raw[k][mtype]['rots'] = rots_can
-                dataset_dict_raw[k][mtype]['trans'] = trans_can
-                seqlen, jts_no = rots_can.shape[:2]
-                # NO need for this for now
-                # rots_can_rotm = transform_body_pose(rots_can,
-                #                                   'aa->rot')
-                # # self.body_model.batch_size = seqlen * jts_no
+        #         rots_can, trans_can = self._canonica_facefront(v[mtype]['rots'],
+        #                                                        v[mtype]['trans']
+        #                                                        )
+        #         dataset_dict_raw[k][mtype]['rots'] = rots_can
+        #         dataset_dict_raw[k][mtype]['trans'] = trans_can
+        #         seqlen, jts_no = rots_can.shape[:2]
+        #         # NO need for this for now
+        #         # rots_can_rotm = transform_body_pose(rots_can,
+        #         #                                   'aa->rot')
+        #         # # self.body_model.batch_size = seqlen * jts_no
 
-                # jts_can_ds = self.body_model.smpl_forward_fast(transl=trans_can,
-                #                                  body_pose=rots_can_rotm[:, 1:],
-                #                              global_orient=rots_can_rotm[:, :1])
+        #         # jts_can_ds = self.body_model.smpl_forward_fast(transl=trans_can,
+        #         #                                  body_pose=rots_can_rotm[:, 1:],
+        #         #                              global_orient=rots_can_rotm[:, :1])
 
-                # jts_can = jts_can_ds.joints[:, :22]
-                # dataset_dict_raw[k][mtype]['joint_positions'] = jts_can
+        #         # jts_can = jts_can_ds.joints[:, :22]
+        #         # dataset_dict_raw[k][mtype]['joint_positions'] = jts_can
 
-        data_dict = cast_dict_to_tensors(dataset_dict_raw)
+        # data_dict = cast_dict_to_tensors(dataset_dict_raw)
         data_ids = list(data_dict.keys())
         from src.data.utils import read_json
         splits = read_json(f'{os.path.dirname(Path(curdir / self.datapath))}/splits.json')
