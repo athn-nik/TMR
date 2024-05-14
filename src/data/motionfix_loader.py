@@ -79,7 +79,7 @@ class MotionFixLoader(Dataset):
         #         # jts_can = jts_can_ds.joints[:, :22]
         #         # dataset_dict_raw[k][mtype]['joint_positions'] = jts_can
 
-        # data_dict = cast_dict_to_tensors(dataset_dict_raw)
+        data_dict = cast_dict_to_tensors(dataset_dict_raw)
         data_ids = list(data_dict.keys())
         from src.data.utils import read_json
         splits = read_json(f'{os.path.dirname(Path(curdir / self.datapath))}/splits.json')
