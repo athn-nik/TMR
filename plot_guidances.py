@@ -82,8 +82,8 @@ def plot_2d_3d_plot(x, y, z, xname, yname,
     ax.set_ylabel(yname,fontsize=20)
     title_name = name.split('|')
     title_name = '\n'.join(title_name)
-    ax.set_title(f'info: {title_name}', 
-                 fontsize=11,  pad=20)
+    # ax.set_title(f'info: {title_name}', 
+    #              fontsize=11,  pad=20)
     # cbar = plt.colorbar(scatter, ax=ax)
     cbar = plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap='cividis'), ax=ax)
     
@@ -106,6 +106,8 @@ def plot_2d_3d_plot(x, y, z, xname, yname,
     ax.set_ylim(min(y) - y_margin, max(y) + y_margin)
     print(f"saved in : guid_grids/{metric}{name.split('-')[0]}.png")
     plt.savefig(f"./guid_grids/{metric}{name.split('-')[0]}.png")
+    plt.savefig(f"./guid_grids/{metric}{name.split('-')[0]}.pdf")
+
     # plt.savefig(f'./{metric}_{name}.pdf')
 
 def main(path_samples, metric, set_for_eval):
@@ -130,12 +132,12 @@ def main(path_samples, metric, set_for_eval):
 
     order = False if higher_is_better else True
     plot_2d_3d_plot(g_tnm, g_m, t2t_bt,
-                    '$g_{text}^{motion}$', '$g^{motion}$',
+                    '$s_L$',  '$s_{M_{S}}$',
                     metric=metric,
                     name=f'Gen2Target-{set_for_eval}|{samples_name}|{exp_alias}',
                     invert_size=order)
     plot_2d_3d_plot(g_tnm, g_m, s2t_bt,
-                    '$g_{text}^{motion}$', '$g^{motion}$',
+                    '$s_L$',  '$s_{M_{S}}$', 
                     metric=metric,
                     name=f'Source2Gen-{set_for_eval}__{samples_name}__{exp_alias}',
                     invert_size=order)
