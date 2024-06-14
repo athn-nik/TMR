@@ -10,6 +10,13 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 BASE_PATH = 'experiments/clean-motionfix' 
+from pathlib import Path
+
+def has_more_than_five_files(directory):
+    count = sum(1 for _ in Path(directory).iterdir() if _.is_file())
+    return count > 5
+
+# if not has_more_than_five_files(directory_path):
 
 def get_metrs_n_guids(subpath, metr, set_to_eval='test'):
     # path_for_exps = f'{BASE_PATH}/{subpath}'
@@ -31,6 +38,8 @@ def get_metrs_n_guids(subpath, metr, set_to_eval='test'):
     not_found = 0
     not_found_paths = []
     for x in tqdm(loxps):
+        if not has_more_than_five_files(x):
+            continue
         gd_comb = x.split('/')[-1]
         numbers = re.findall(r'\d+\.\d+', gd_comb)
         try:
