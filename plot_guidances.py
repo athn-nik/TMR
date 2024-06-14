@@ -115,6 +115,7 @@ def plot_2d_3d_plot(x, y, z, xname, yname,
     ax.set_ylim(min(y) - y_margin, max(y) + y_margin)
     print(f"saved in : guid_grids/{metric}{name.split('-')[0]}.png")
     plt.savefig(f"./guid_grids/{metric}{name.split('-')[0]}.png")
+    plt.savefig(f"./guid_grids/{metric}{name.split('-')[0]}.pdf")
     # plt.savefig(f'./{metric}_{name}.pdf')
 
 def main(path_samples, metric, set_for_eval):
