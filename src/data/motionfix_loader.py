@@ -28,7 +28,7 @@ class MotionFixLoader(Dataset):
                  sets: List[str] = ['test'],
                  **kwargs):
         # v11 is the next one 
-        self.datapath = 'datasets/bodilex/amass_bodilex_v13.pth.tar'
+        self.datapath = 'datasets/bodilex/amass_bodilex_v14.pth.tar'
         self.collate_fn = lambda b: collate_batch_last_padding(b, load_feats)
         self.rot_repr = rot_repr
         curdir = Path(hydra.utils.get_original_cwd())
