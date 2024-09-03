@@ -38,8 +38,8 @@ def get_metrs_n_guids(subpath, metr, set_to_eval='test'):
     not_found = 0
     not_found_paths = []
     for x in tqdm(loxps):
-        if not has_more_than_five_files(x):
-            continue
+        #if not has_more_than_five_files(x):
+        #    continue
         gd_comb = x.split('/')[-1]
         numbers = re.findall(r'\d+\.\d+', gd_comb)
         try:
@@ -117,8 +117,6 @@ def plot_2d_3d_plot(x, y, z, xname, yname,
     plt.savefig(f"./guid_grids/{metric}{name.split('-')[0]}.png")
     plt.savefig(f"./guid_grids/{metric}{name.split('-')[0]}.pdf")
 
-    # plt.savefig(f'./{metric}_{name}.pdf')
-
 def main(path_samples, metric, set_for_eval):
     g_tnm, g_m,  s2t_bt, t2t_bt, s2t_all, t2t_all = get_metrs_n_guids(path_samples, 
                                                                       metr=metric,
@@ -160,7 +158,7 @@ if __name__ == '__main__':
 
     # Add the arguments
     parser.add_argument('-p', '--path', type=str, help='The path to process')
-    parser.add_argument('-m', '--metric', type=str, help='The string to process')
+    parser.add_argument('-m', '--metric', default='R@1', type=str, help='The string to process')
     parser.add_argument('--set',required=False,
                         default='test',
                         type=str, help='The string to process')

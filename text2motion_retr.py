@@ -114,6 +114,7 @@ def compute_sim_matrix(model, dataset, keyids, gen_samples,
             sent_embs.append(sent_emb)
 
         latent_texts = torch.cat(latent_texts)
+        import ipdb;ipdb.set_trace()
         latent_motions = torch.cat(latent_motions)
         sent_embs = torch.cat(sent_embs)
         sim_matrix = get_sim_matrix(latent_texts, latent_motions)
