@@ -5,6 +5,8 @@ wandb
 experiments
 condor_logs
 cluster_scripts
+guid-grids
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
