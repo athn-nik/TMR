@@ -38,8 +38,8 @@ def get_metrs_n_guids(subpath, metr, set_to_eval='test'):
     not_found = 0
     not_found_paths = []
     for x in tqdm(loxps):
-        if not has_more_than_five_files(x):
-            continue
+        #if not has_more_than_five_files(x):
+        #    continue
         gd_comb = x.split('/')[-1]
         numbers = re.findall(r'\d+\.\d+', gd_comb)
         try:
@@ -158,7 +158,7 @@ if __name__ == '__main__':
 
     # Add the arguments
     parser.add_argument('-p', '--path', type=str, help='The path to process')
-    parser.add_argument('-m', '--metric', type=str, help='The string to process')
+    parser.add_argument('-m', '--metric', default='R@1', type=str, help='The string to process')
     parser.add_argument('--set',required=False,
                         default='test',
                         type=str, help='The string to process')
